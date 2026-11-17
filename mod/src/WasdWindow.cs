@@ -29,7 +29,7 @@ public static class WasdWindow
 
     // 0.8.4 (PZA's Meitou UI 0.3.0, the user 2026-11-17: windows too big and half empty, more and more pages): three tabs, a smaller window;
     // the controller list moved under the keys; help and controller rows wrapped in the real font at the list's width, so nothing spills.
-    public static string LayoutXml() => L.Doc(L.WindowMin("Root", "PZA'S WASD CONTROL", 0.36, 0.14, 0.28, 0.54,
+    public static string LayoutXml() => L.Doc(L.WindowMin("Root", "PZA'S WASD & CONTROLLER SUPPORT", 0.36, 0.14, 0.28, 0.54,
         L.Tabs("Tabs", 0.03, 0.02, 0.94, 0.96,
             ("TabMain", [
                 L.Text("lbState", 0.03, 0.01, 0.94, 0.07),

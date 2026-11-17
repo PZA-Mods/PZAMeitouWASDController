@@ -37,7 +37,7 @@ $w = New-Object System.IO.BinaryWriter($fs)
 try {
     $w.Write([int]16); $w.Write([int]1)
     Write-FcsString $w "PZA"
-    Write-FcsString $w "PZA's WASD Control (Meitou) (code mod pza.wasdcontrol): steer the selected character with W A S D; V toggles, X speed, G take control. Holds no records. Source: GPLv3."
+    Write-FcsString $w "PZA's WASD & Controller Support for Meitou (code mod pza.wasdcontrol): steer the selected character with W A S D; V toggles, X speed, G take control. Holds no records. Source: GPLv3."
     Write-FcsString $w ""; Write-FcsString $w ""
     $w.Write([int]0); $w.Write([int]0)
 } finally { $w.Close() }
