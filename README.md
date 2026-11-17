@@ -51,6 +51,11 @@ Known limits:
 - Manual combat (attacking with a key) is not in yet.
 - Texts are in English only for now.
 
+## Planned
+Ideas, no dates:
+- **Manual combat:** attack, block and dodge with keys or the pad.
+- Texts in Russian, Chinese and Japanese, as the other PZA mods.
+
 ## Reporting a bug
 What happened, how to make it happen again, keyboard or which controller, your Meitou version and mod list, and Meitou's `log.txt` (in your
 Meitou folder) copied right after that session. Our lines start with `pza.wasdcontrol`. Post it in its thread on the Meitou Discord or in the Workshop page's Bug reports discussion.
