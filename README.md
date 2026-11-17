@@ -1,9 +1,12 @@
-# PZA's WASD Control for Meitou (beta 0.9.6)
+# PZA's WASD Control for Meitou: keyboard and game controller (beta 0.9.6)
 
-Steer your selected character yourself with **W A S D**, the camera following, as in a third-person game, with an over-the-shoulder view, a
-first-person view and full game-controller support. Press **V** to switch it on and off; while it is off, Meitou plays as usual.
+Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
+Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
+button) to switch it on and off; while it is off, Meitou plays as usual.
 
 **Download:** the mod zip and its source zip are on the [Releases page](https://github.com/PZA-Mods/PZAMeitouDirectControl/releases). Building from source: [BUILD.md](BUILD.md).
+
+![PZA's WASD Control: the controller layout](media/controller-layout.png)
 
 ## Hotkeys
 
@@ -21,7 +24,7 @@ first-person view and full game-controller support. Press **V** to switch it on 
 
 Ctrl and P are left alone on purpose (Meitou's camera orbit and photo mode). Nothing fires while you type in a text box.
 
-**Game controller:** left stick steers (light push walks, full push runs), right stick looks, the face buttons act and select, LB / RB
+**Game controller** (the picture above): left stick steers (light push walks, full push runs), right stick looks, the face buttons act and select, LB / RB
 switch squad members (hold RB for the squad wheel). The full layout is on the window's CONTROLLER tab. A Switch Pro controller works best
 when Meitou is started through Steam (as a non-Steam game), so Steam Input handles it.
 
