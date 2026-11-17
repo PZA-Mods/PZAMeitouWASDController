@@ -1,0 +1,70 @@
+// PZA's WASD Control (Meitou). Author: PZA. Licence: GPLv3 or later.
+// The Settings > Mods group (MeitouClient docs/modding.md "Settings"). The page sets these on the interface thread, the same thread the patches
+// run on (the host's), outside the tick.
+using Meitou.Modding;
+
+namespace PZA.WASDControl.Meitou;
+
+public sealed class DcSettings
+{
+    public const float MinSteer = 15, MaxSteer = 120;
+
+    /// <summary>WASD Control is on when a game starts (V flips it any time).</summary>
+    [Setting(Strings.En.StartOnLabel, Hint = Strings.En.StartOnHint)]
+    public bool StartOn { get; set; }
+
+    /// <summary>How far ahead each move order points, world units (10 is about a metre; Meitou's arrive radius is 10).</summary>
+    [Setting(Strings.En.SteerLabel, Hint = Strings.En.SteerHint, Min = MinSteer, Max = MaxSteer, Step = 5)]
+    public float SteerDistance { get; set; } = 40;
+
+    /// <summary>Letting go of W A S D stops the character at once (else it walks on to the last point).</summary>
+    [Setting(Strings.En.StopLabel, Hint = Strings.En.StopHint)]
+    public bool StopOnRelease { get; set; } = true;
+
+    /// <summary>The controller's left stick: a light push walks, a full push uses the chosen run speed (StickSpeed).</summary>
+    [Setting(Strings.En.StickWalkLabel, Hint = Strings.En.StickWalkHint)]
+    public bool StickWalk { get; set; } = true;
+
+    /// <summary>The camera follows the controlled character while WASD Control is on.</summary>
+    [Setting(Strings.En.FollowLabel, Hint = Strings.En.FollowHint)]
+    public bool CameraFollows { get; set; } = true;
+
+
+    /// <summary>The keys (the window's Keys tab changes them, refusing keys the game's own controls use). Letters only.</summary>
+    public const string Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    [Setting(Strings.En.KeyToggleLabel, Hint = Strings.En.KeyHint, Options = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], SubGroup = Strings.En.KeysGroup)]
+    public string KeyToggle { get; set; } = "V";
+    [Setting(Strings.En.KeyShoulderLabel, Hint = Strings.En.KeyHint, Options = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], SubGroup = Strings.En.KeysGroup)]
+    public string KeyShoulder { get; set; } = "Z";
+    [Setting(Strings.En.KeyFirstLabel, Hint = Strings.En.KeyHint, Options = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], SubGroup = Strings.En.KeysGroup)]
+    public string KeyFirst { get; set; } = "N";
+    [Setting(Strings.En.KeyTakeLabel, Hint = Strings.En.KeyHint, Options = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], SubGroup = Strings.En.KeysGroup)]
+    public string KeyTake { get; set; } = "G";
+
+    /// <summary>How fast the mouse and the right stick turn the views.</summary>
+    [Setting(Strings.En.LookSpeedLabel, Hint = Strings.En.LookSpeedHint, Options = ["Slow", "Normal", "Fast"], SubGroup = Strings.En.ViewsGroup)]
+    public string LookSpeed { get; set; } = "Normal";
+    /// <summary>Mouse / stick forward looks down (flight style).</summary>
+    [Setting(Strings.En.InvertLabel, Hint = Strings.En.InvertHint, SubGroup = Strings.En.ViewsGroup)]
+    public bool InvertLook { get; set; }
+    /// <summary>Which shoulder the over-the-shoulder camera looks over.</summary>
+    [Setting(Strings.En.SideLabel, Hint = Strings.En.SideHint, Options = ["Right", "Left"], SubGroup = Strings.En.ViewsGroup)]
+    public string ShoulderSide { get; set; } = "Right";
+
+    /// <summary>The window and its tiny button (PZA's Meitou UI). Places are fractions of the screen; the window's is its offset from its first place.</summary>
+    [Setting(Strings.En.WindowLabel, Hint = Strings.En.WindowHint, SubGroup = Strings.En.WindowGroup)]
+    public bool ShowWindow { get; set; } = true;
+    [Setting(Strings.En.TinyLabel, Hint = Strings.En.TinyHint, VisibleWhen = nameof(ShowWindow), SubGroup = Strings.En.WindowGroup)]
+    public bool Tiny { get; set; } = true;
+    [Setting(Strings.En.PlaceLabel, Hint = Strings.En.PlaceHint, Min = -1, Max = 1, Step = 0.001, VisibleWhen = nameof(ShowWindow), SubGroup = Strings.En.WindowGroup)]
+    public double WindowPlaceX { get; set; }
+    [Setting(Strings.En.PlaceLabel, Hint = Strings.En.PlaceHint, Min = -1, Max = 1, Step = 0.001, VisibleWhen = nameof(ShowWindow), SubGroup = Strings.En.WindowGroup)]
+    public double WindowPlaceY { get; set; }
+    [Setting(Strings.En.TinyPlaceLabel, Hint = Strings.En.PlaceHint, Min = 0, Max = 1, Step = 0.001, VisibleWhen = nameof(ShowWindow), SubGroup = Strings.En.WindowGroup)]
+    public double TinyPlaceX { get; set; } = 1;
+    [Setting(Strings.En.TinyPlaceLabel, Hint = Strings.En.PlaceHint, Min = 0, Max = 1, Step = 0.001, VisibleWhen = nameof(ShowWindow), SubGroup = Strings.En.WindowGroup)]
+    public double TinyPlaceY { get; set; } = 0.10;
+    [Setting(Strings.En.OpacityLabel, Hint = Strings.En.OpacityHint, Min = 0.35, Max = 1, Step = 0.05, VisibleWhen = nameof(ShowWindow), SubGroup = Strings.En.WindowGroup)]
+    public double TinyOpacity { get; set; } = 1;
+}

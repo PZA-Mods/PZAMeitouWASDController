@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- PZA's WASD Control (Meitou): the code mod (author PZA, GPLv3 or later). Built against MeitouClient 0.20.1 (gameVersion "=0.20.1").
+       The game supplies every Meitou assembly and 0Harmony at run time: they are referenced by path with Private="false" and never copied
+       into git or the output. Override MeitouDir to build against another unpacked Meitou release. -->
+  <PropertyGroup>
+    <!-- 0.20.1's MeitouClient.runtimeconfig.json: tfm net11.0, Microsoft.NETCore.App 11.0.0. The normal build needs a .NET 11 SDK. -->
+    <TargetFramework>net11.0</TargetFramework>
+    <!-- Fallback when only an older SDK is installed (this machine had SDK 10.0.402, 2026-11-15): compile against the .NET 11 framework
+         assemblies that ship inside the Meitou release instead of the SDK's reference pack. The output references System.Runtime 11.0.0.0
+         exactly as a net11.0 build does; only the TargetFramework attribute is left out. Force either way with -p:DcGameFramework=true|false. -->
+    <DcGameFramework Condition="'$(DcGameFramework)' == '' and $([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '11.0'))">true</DcGameFramework>
+    <TargetFramework Condition="'$(DcGameFramework)' == 'true'">net10.0</TargetFramework>
+    <AssemblyName>PZAWASDControl</AssemblyName>
+    <RootNamespace>PZA.WASDControl.Meitou</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>0.9.6</Version>
+    
+    <Authors>PZA</Authors>
+    <Company>PZA</Company>
+    <Product>PZA's WASD Control (Meitou)</Product>
+    <Copyright>PZA, GPLv3 or later</Copyright>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=PZAMeitouDirectControl/mod</PathMap>
+  </PropertyGroup>
+  <!-- Your unpacked Meitou release: pass -p:MeitouDir=..., or set it once in mod\local.props (git-ignored):
+       <Project><PropertyGroup><MeitouDir>C:\path\to\Meitou-0.20.1-win-x64</MeitouDir></PropertyGroup></Project> -->
+  <Import Project="$(MSBuildThisFileDirectory)local.props" Condition="'$(MeitouDir)' == '' And Exists('$(MSBuildThisFileDirectory)local.props')" />
+
+  <ItemGroup>
+    <Reference Include="MeitouClient"><HintPath>$(MeitouDir)\MeitouClient.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Meitou.Simulation"><HintPath>$(MeitouDir)\Meitou.Simulation.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Meitou.Core"><HintPath>$(MeitouDir)\Meitou.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Meitou.Data"><HintPath>$(MeitouDir)\Meitou.Data.dll</HintPath><Private>false</Private></Reference>
+    <!-- Meitou's own GLFW binding (the pad): shipped by the game, so the loader hands the mod the game's copy (ModLoadContext.IsShipped). -->
+    <Reference Include="Silk.NET.GLFW"><HintPath>$(MeitouDir)\Silk.NET.GLFW.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Silk.NET.Core"><HintPath>$(MeitouDir)\Silk.NET.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(MeitouDir)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(DcGameFramework)' == 'true'">
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <NoCompilerStandardLib>true</NoCompilerStandardLib>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(DcGameFramework)' == 'true'">
+    <GameFramework Include="$(MeitouDir)\System*.dll;$(MeitouDir)\mscorlib.dll;$(MeitouDir)\netstandard.dll"
+                   Exclude="$(MeitouDir)\*Native*.dll" />
+    <Reference Include="@(GameFramework)"><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tools\**;out\**" />
+    <!-- PZA's Meitou UI: the shared window library, compiled in (its own copy, state and patches). -->
+    <Compile Include="..\..\PZAMeitouUi\src\*.cs" Link="PzaMeitouUi\%(Filename)%(Extension)" />
+    <None Remove="tools\**;out\**" />
+    <None Include="meitou.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CheckMeitouDir" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(MeitouDir)\MeitouClient.dll')"
+           Text="MeitouClient.dll not found in MeitouDir='$(MeitouDir)'. Unpack Meitou 0.20.1 there or pass -p:MeitouDir=..." />
+  </Target>
+</Project>

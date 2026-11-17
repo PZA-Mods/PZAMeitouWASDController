@@ -1,0 +1,7 @@
+bin/
+obj/
+out/
+# your Meitou folder for the build
+local.props
+.vs/
+*.user
