@@ -4,7 +4,10 @@
 // - RB held: a round dial of the active squad's faces opens in the middle of the screen; the right stick points at a slice (it stays lit when
 //   the stick comes back); letting go of RB takes control of that member; B cancels; nothing lit, nothing changes;
 // - the top slice is EVERYONE (user, 2026-11-17: "how do you select EVERYONE in the squad (on keyboard it's tilde ~)"): letting go on it
-//   presses the game's own SelectAll key, as ~ does;
+//   presses the game's own SelectAll key, as ~ does; the bottom slice is SQUAD PACE (0.9.8: it moved here off ZR): letting go there switches
+//   squad pace on or off for the squad (Meitou's group speed, everyone at the slowest); the left slice is FOLLOW ME (0.9.9, user: "another
+//   button to make everyone follow whoever is selected/being controlled"): the rest of the squad follows the controlled character (Meitou's
+//   own FollowOrder, the right-click menu's Follow);
 // - squads of any size: up to 7 members a dial of 8, up to 11 a dial of 12, more: pages (EVERYONE + 11 faces each), flipped with D-pad
 //   left / right or LB while RB is held; it opens on the page of the member under control. The members are Meitou's squad bar's (at most 30,
 //   its own cap); their faces are the cells Meitou already draws for the bar every frame (portrait atlas cell = squad bar index).
@@ -21,7 +24,7 @@ using Meitou.Simulation;
 
 namespace PZA.WASDControl.Meitou;
 
-public enum WheelResult { None, Tap, Open, Everyone }
+public enum WheelResult { None, Tap, Open, Everyone, SquadPace, FollowMe }
 
 public static class SquadWheel
 {
@@ -31,27 +34,39 @@ public static class SquadWheel
     public const float Aim = 0.5f;
     public const int SmallRing = 8, BigRing = 12;
     /// <summary>A slice's content: EVERYONE (the top slice of every page), nothing, or a member index (0 and up).</summary>
-    public const int Everyone = -2, Empty = -1;
+    public const int Everyone = -2, Empty = -1, SquadPace = -3, FollowMe = -4;
     const int None = int.MinValue;
 
-    /// <summary>The dial's slices for <paramref name="count"/> members (EVERYONE takes one): 8 up to 7 members, else 12.</summary>
-    public static int Slots(int count) => count + 1 <= SmallRing ? SmallRing : BigRing;
+    /// <summary>The fixed slices: EVERYONE at the top, SQUAD PACE at the bottom, FOLLOW ME on the left.</summary>
+    const int Fixed = 3;
 
-    /// <summary>Pages: one, or as many as it takes at EVERYONE + 11 faces each.</summary>
-    public static int Pages(int count) => Math.Max(1, (count + Slots(count) - 2) / (Slots(count) - 1));
+    /// <summary>The dial's slices for <paramref name="count"/> members (the three fixed slices take three): 8 up to 5 members, else 12.</summary>
+    public static int Slots(int count) => count + Fixed <= SmallRing ? SmallRing : BigRing;
 
-    /// <summary>What slice <paramref name="slot"/> of page <paramref name="page"/> holds: Everyone (slot 0), a member index, or Empty.</summary>
+    /// <summary>Faces on a page: the slices less the fixed ones.</summary>
+    static int PerPage(int count) => Slots(count) - Fixed;
+
+    /// <summary>Pages: one, or as many as it takes at 9 faces each.</summary>
+    public static int Pages(int count) => Math.Max(1, (count + PerPage(count) - 1) / PerPage(count));
+
+    /// <summary>The fixed slice at <paramref name="slot"/> of a dial of <paramref name="slots"/>, or Empty for a face's slice.</summary>
+    public static int FixedAt(int slot, int slots) =>
+        slot == 0 ? Everyone : slot == slots / 2 ? SquadPace : slot == slots * 3 / 4 ? FollowMe : Empty;
+
+    /// <summary>What slice <paramref name="slot"/> of page <paramref name="page"/> holds: a fixed slice, a member index, or Empty.</summary>
     public static int EntryAt(int page, int slot, int count)
     {
         int slots = Slots(count);
         if (slot < 0 || slot >= slots) return Empty;
-        if (slot == 0) return Everyone;
-        int i = page * (slots - 1) + slot - 1;
-        return i < count ? i : Empty;
+        if (FixedAt(slot, slots) is var f and not Empty) return f;
+        int k = 0;
+        for (int i = 0; i < slot; i++) if (FixedAt(i, slots) == Empty) k++;
+        int m = page * PerPage(count) + k;
+        return m < count ? m : Empty;
     }
 
     /// <summary>The page a member index is on.</summary>
-    public static int PageOf(int member, int count) => member < 0 ? 0 : member / (Slots(count) - 1);
+    public static int PageOf(int member, int count) => member < 0 ? 0 : member / PerPage(count);
 
     /// <summary>The slice the stick points at (0 at the top, clockwise), or -1 inside the aim radius. Stick Y is up.</summary>
     public static int SlotAt(Vector2 stick, int slots)
@@ -81,6 +96,9 @@ public static class SquadWheel
     static bool s_open;
     static int s_page, s_lit = None;
     static CharacterId[] s_members = [];
+    static bool s_paceOn;
+    /// <summary>The squad the dial was opened on (squad bar order), for the squad pace switch.</summary>
+    public static IReadOnlyList<CharacterId> Members => s_members;
     static string[] s_names = [];
 
     public static bool IsOpen => s_open;
@@ -145,6 +163,16 @@ public static class SquadWheel
             Close("wheel.everyone");
             return WheelResult.Everyone;
         }
+        if (lit == SquadPace)
+        {
+            Close("wheel.squad_pace");
+            return WheelResult.SquadPace;
+        }
+        if (lit == FollowMe)
+        {
+            Close("wheel.follow_me");
+            return WheelResult.FollowMe;
+        }
         if (lit >= 0 && lit < count) Take(player, s_members[lit], controlled);
         else Counters.Add("wheel.released_empty");
         Close(null);
@@ -164,6 +192,7 @@ public static class SquadWheel
 
         s_members = [.. members.Select(c => c.Id)];
         s_names = [.. members.Select(c => c.Name)];
+        s_paceOn = members.FirstOrDefault(m => m.Id == controlled)?.RunSpeed == global::Meitou.Simulation.Movement.SpeedMode.Group;
         int at = controlled is { } c ? Array.IndexOf(s_members, c) : -1;
         s_page = PageOf(at, s_members.Length);
         s_lit = None;
@@ -293,7 +322,16 @@ public static class SquadWheel
         var top = SlotCentre(c, 0, slots, radius);
         Centred(o, Strings.Get("wheel.all"), top.X, top.Y - 10 * s, s_lit == Everyone ? Gold : Ink, 1.1f * s);
         Centred(o, Strings.Format("wheel.all_count", count), top.X, top.Y + 12 * s, Faint, 0.85f * s);
-        string name = s_lit == Everyone ? Strings.Get("wheel.everyone") : s_lit >= 0 && s_lit < s_names.Length ? s_names[s_lit] : "";
+        var left = SlotCentre(c, slots * 3 / 4, slots, radius);
+        Centred(o, Strings.Get("wheel.follow"), left.X, left.Y - 10 * s, s_lit == FollowMe ? Gold : Ink, 1.0f * s);
+        Centred(o, Strings.Get("wheel.follow_sub"), left.X, left.Y + 12 * s, Faint, 0.85f * s);
+        var bottom = SlotCentre(c, slots / 2, slots, radius);
+        Centred(o, Strings.Get("wheel.pace"), bottom.X, bottom.Y - 10 * s, s_lit == SquadPace ? Gold : Ink, 1.0f * s);
+        Centred(o, Strings.Get(s_paceOn ? "wheel.pace_on" : "wheel.pace_off"), bottom.X, bottom.Y + 12 * s, Faint, 0.85f * s);
+        string name = s_lit == Everyone ? Strings.Get("wheel.everyone")
+            : s_lit == SquadPace ? Strings.Get(s_paceOn ? "wheel.pace_turn_off" : "wheel.pace_turn_on")
+            : s_lit == FollowMe ? Strings.Get("wheel.follow_name")
+            : s_lit >= 0 && s_lit < s_names.Length ? s_names[s_lit] : "";
         Centred(o, name, c.X, c.Y - 30 * s, Gold, 1.35f * s);
         if (pages > 1) Centred(o, Strings.Format("wheel.page", s_page + 1, pages), c.X, c.Y + 4 * s, Faint, 0.95f * s);
         Centred(o, Strings.Get(pages > 1 ? "wheel.hint_pages" : "wheel.hint"), c.X, c.Y + (pages > 1 ? 28 : 8) * s, Faint, 0.85f * s);

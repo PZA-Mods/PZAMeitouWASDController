@@ -10,8 +10,8 @@ public static class Strings
     /// <summary>English strings that must be constants (attribute arguments).</summary>
     public static class En
     {
-        public const string StickWalkLabel = "Stick push: walk or run";
-        public const string StickWalkHint = "Controller: a light push on the left stick walks, a full push runs at the speed you chose (ZR / X). Let go and your speed is back.";
+        public const string StickWalkLabel = "Stick push: walk, jog or run";
+        public const string StickWalkHint = "Controller: a light push on the left stick walks, a medium push jogs, a full push runs. Squad pace (squad dial, or X) is left alone. Let go and your speed is back.";
         public const string KeysGroup = "Keys";
         public const string ViewsGroup = "Views";
         public const string WindowGroup = "Window";
@@ -120,7 +120,7 @@ public static class Strings
         ["help.2"] = "Views: over the shoulder and first person. In a view the mouse looks around, the cursor in the middle is your crosshair: right-click a person for their menu, an object for its action; left-click one of your people to see their info. Hold Alt for a free cursor. Bare ground does nothing: walk with W A S D.",
         ["help.3"] = "Controller: any pad Windows or Steam knows. A Switch Pro controller needs Meitou started through Steam (Steam Input). A pad that presses buttons by itself is ignored, with a line in the log.",
         ["help.4"] = "The Keys tab changes the mod's keys. X is Meitou's own run speed, Numpad 4 its sneak. PZA's WASD Control is by PZA, inspired by Direct Control for Kenshi (smokefoolius).",
-        ["pad.1"] = "Left stick: move (relative to the camera); a light push walks, a full push runs",
+        ["pad.1"] = "Left stick: move (relative to the camera); light push walk, medium jog, full run",
         ["pad.2"] = "Left stick click (L3): sneak on / off",
         ["pad.3"] = "Right stick: look around / turn the camera",
         ["pad.4"] = "Right stick click (R3): camera behind you; hold to look back",
@@ -129,9 +129,9 @@ public static class Strings
         ["pad.7"] = "Top button (Xbox Y, Switch X): over-the-shoulder view",
         ["pad.8"] = "Left button (Xbox X, Switch Y): first-person view",
         ["pad.9"] = "LB / L: previous squad member",
-        ["pad.10"] = "RB / R: tap next squad member; hold for the squad wheel (right stick aims, let go to take control; top slice: everyone; B cancels)",
+        ["pad.10"] = "RB / R: tap next squad member; hold for the squad wheel (right stick aims, let go to take control; top: everyone; bottom: squad pace; left: follow me; B cancels)",
         ["pad.11"] = "LT / ZL (hold): highlight; with interact: loot / steal",
-        ["pad.12"] = "RT / ZR (tap): run speed",
+        ["pad.12"] = "RT / ZR: free (left for other mods)",
         ["pad.13"] = "LT + RT / ZL + ZR together: stop",
         ["pad.14"] = "D-pad up / down: zoom in / out",
         ["pad.15"] = "D-pad left / right: game speed slower / faster",
@@ -140,6 +140,15 @@ public static class Strings
         ["wheel.all"] = "EVERYONE",
         ["wheel.all_count"] = "all {0}",
         ["wheel.everyone"] = "The whole squad",
+        ["wheel.follow"] = "FOLLOW ME",
+        ["wheel.follow_sub"] = "the rest",
+        ["wheel.follow_name"] = "Everyone follows you",
+        ["log.follow_me"] = "WASD Control: {0} squad member(s) told to follow the controlled character.",
+        ["wheel.pace"] = "SQUAD PACE",
+        ["wheel.pace_on"] = "on",
+        ["wheel.pace_off"] = "off",
+        ["wheel.pace_turn_on"] = "Squad pace: turn on",
+        ["wheel.pace_turn_off"] = "Squad pace: turn off",
         ["wheel.page"] = "Page {0} / {1}",
         ["wheel.hint"] = "Aim, let go of RB",
         ["wheel.hint_pages"] = "D-pad / LB: page",

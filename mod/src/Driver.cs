@@ -135,6 +135,8 @@ public static class Driver
         {
             case WheelResult.Tap: PressGame(session, InputAction.NextCharacter); break;   // RB tapped: the next member, as before
             case WheelResult.Everyone: PressGame(session, InputAction.SelectAll); return;   // the dial's top slice: the whole squad, as ~
+            case WheelResult.SquadPace: ToggleSquadPace(session); return;   // the dial's bottom slice
+            case WheelResult.FollowMe: FollowMe(session); return;           // the dial's left slice
             case WheelResult.Open: return;   // RB held: the squad wheel has the pad (stick, D-pad / LB pages, B cancels)
         }
         if (Menus.Pad(Player!, pad)) return;   // a menu is open: the pad picks in it (D-pad, interact, select)
@@ -219,12 +221,10 @@ public static class Driver
 
     /// <summary>ZL is held: the game's highlight (Alt) is held for the pad, so loot names show and A becomes Alt + right click (loot, steal).</summary>
     public static bool PadHighlight { get; private set; }
-    /// <summary>ZR went down alone: on its release it steps the run speed (unless ZL joined it: then it was the stop chord).</summary>
-    static bool s_zrTap;
     /// <summary>ZL and ZR were pressed together: stop, given once until both are let go.</summary>
     static bool s_chord;
 
-    /// <summary>ZL (hold) highlight; ZL + ZR together stop; ZR tapped alone steps the run speed on its release.</summary>
+    /// <summary>ZL (hold) highlight; ZL + ZR together stop; ZR alone is free (0.9.8).</summary>
     static void PadTriggers(PadState pad, WorldSession session)
     {
         bool zl = pad.Down(PadButton.LeftTrigger), zr = pad.Down(PadButton.RightTrigger);
@@ -234,16 +234,46 @@ public static class Driver
         if (chordNow && !s_chord)
         {
             s_chord = true;
-            s_zrTap = false;
             PressGame(session, InputAction.StopMovement);
         }
-        if (Pad.WasPressed(PadButton.RightTrigger) && !zl) s_zrTap = true;
-        if (Pad.WasReleased(PadButton.RightTrigger))
-        {
-            if (s_zrTap && !s_chord) PressGame(session, InputAction.CycleRunSpeed);
-            s_zrTap = false;
-        }
+        // ZR alone is free since 0.9.8 (user, 2026-11-17): the stick's push walks / jogs / runs and squad pace is on the squad dial.
+        if (Pad.WasPressed(PadButton.RightTrigger) && !zl) Counters.Add("pad.zr_free");
         if (!zl && !zr) s_chord = false;
+    }
+
+    /// <summary>
+    /// The squad dial's FOLLOW ME: the rest of the dial's squad follows the controlled character (Meitou's FollowOrder, as the right-click
+    /// menu's Follow gives it).
+    /// </summary>
+    static void FollowMe(WorldSession session)
+    {
+        if (s_controlled is not { } leader) { Counters.Add("follow.no_leader"); return; }
+
+        var others = SquadWheel.Members.Where(i => i != leader).ToArray();
+        if (others.Length == 0) { Counters.Add("follow.alone"); return; }
+
+        session.World.Commands.Enqueue(new global::Meitou.Simulation.FollowOrder(others, leader) { Tick = session.World.Tick });
+        Counters.Add("follow.me");
+        Log.Line(Strings.Format("log.follow_me", others.Length));
+    }
+
+    /// <summary>
+    /// The squad dial's SQUAD PACE: Meitou's group speed for the dial's squad (everyone at the slowest member), or off again (full run).
+    /// One RunSpeedCommand for them all, the controlled character first: every one takes the first one's new mode (Orders.cs, RunSpeedCommand).
+    /// </summary>
+    static void ToggleSquadPace(WorldSession session)
+    {
+        var ids = SquadWheel.Members;
+        if (ids.Count == 0) return;
+
+        var first = s_controlled is { } c && ids.Contains(c) ? c : ids[0];
+        if (session.CurrentSnapshot.Characters.FirstOrDefault(x => x.Id == first) is not { } lead) return;
+
+        byte group = global::Meitou.Simulation.Movement.SpeedMode.Group, free = global::Meitou.Simulation.Movement.SpeedMode.Free;
+        byte want = lead.RunSpeed == group ? free : group;
+        CharacterId[] order = [first, .. ids.Where(i => i != first)];
+        session.World.Commands.Enqueue(new global::Meitou.Simulation.Player.RunSpeedCommand(order, StickSpeed.Step(lead.RunSpeed, want)) { Tick = session.World.Tick });
+        Counters.Add(want == group ? "pace.on" : "pace.off");
     }
 
     /// <summary>Holds or lets go of the game's highlight key (Alt) for the pad, on the input the control tick reads (InputState.SetKey).</summary>

@@ -13,8 +13,10 @@ namespace PZA.WASDControl.Meitou;
 
 public static class Clicks
 {
-    /// <summary>Pixels around the crosshair the aim help tries, nearest ring first.</summary>
-    public static readonly float[] AimRings = [18, 36, 60];
+    /// <summary>Pixels around the crosshair (at 1080 lines; scaled with the screen) the aim help tries for a person, nearest ring first.</summary>
+    public static readonly float[] AimRings = [20, 40, 70];
+    /// <summary>The ring (at 1080 lines) within which the aim help also takes an object (a door, a box, a rock...).</summary>
+    public const float ObjectRing = 20;
 
     /// <summary>A left button release on the world is being handled (PlayerInterface.MouseUp).</summary>
     static bool s_leftUp;
@@ -106,20 +108,30 @@ public static class Clicks
         return false;
     }
 
-    /// <summary>The nearest point around the crosshair with something on it (not ground, not a build site), and what it is.</summary>
+    /// <summary>
+    /// The nearest point around the crosshair with something on it, and what it is: a person anywhere within the rings first, else an object
+    /// only right by the crosshair. Play test 2026-11-17 (clip 16.35.51: right clicks at the crosshair "having trouble registering the target",
+    /// then "it seemingly clicked on a iron ore node"): the old help took the first thing of any kind in rings of 18 / 36 / 60 px, unscaled at
+    /// 4K, so a rock beside a person won and the click sent a mining order. Rings now scale with the screen height.
+    /// </summary>
     static (Vector2 P, string Kind)? AimHelp(object player, Vector2 p)
     {
+        var (_, h) = Access.UiSize(player);
+        float s = Math.Max(1, h / 1080f);
+        (Vector2 P, string Kind)? nearObject = null;
         foreach (float r in AimRings)
         {
             for (int i = 0; i < 8; i++)
             {
                 float a = i * MathF.PI / 4;
-                var q = p + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r;
+                var q = p + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r * s;
                 string kind = Access.PickKind(player, q);
-                if (kind is not ("None" or "Site")) return (q, kind);
+                if (kind == "Character") return (q, kind);
+                if (r <= ObjectRing && nearObject is null && kind is not ("None" or "Site")) nearObject = (q, kind);
             }
         }
-        return null;
+        if (nearObject is not null) Counters.Add("click.aim_object");
+        return nearObject;
     }
 
     #endregion

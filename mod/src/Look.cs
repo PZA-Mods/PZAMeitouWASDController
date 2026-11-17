@@ -41,6 +41,13 @@ public static class Look
     /// <summary>GameHost.MouseLook postfix: true while Wanted; an off -> on change asks for the pointer at the centre.</summary>
     public static bool Answer(bool game)
     {
+        Update();
+        return game || s_wasOn;
+    }
+
+    /// <summary>The look's on / off from <see cref="Wanted"/>; an off -> on change asks for the pointer at the centre.</summary>
+    static void Update()
+    {
         bool on = Wanted();
         if (on && !s_wasOn)
         {
@@ -50,7 +57,6 @@ public static class Look
         else if (!on && s_wasOn) Counters.Add("look.off");
 
         s_wasOn = on;
-        return game || on;
     }
 
     /// <summary>Turns the rig by the tick's mouse movement while the look is on (the rig's own turn needs Orbit held, so nothing doubles).</summary>
@@ -91,6 +97,10 @@ public static class Look
     /// </summary>
     public static void Frame(object gameLoop)
     {
+        // Asked here every frame too: Meitou calls GameHost.MouseLook only on a mouse move or while already pinned (GameLoop.PreparePointer
+        // short-circuits on a null anchor), so after Z / N the look turned on, pinned and centred only at the first mouse move (play test
+        // 2026-11-17: "still relies on player to move the mouse first, then it snaps").
+        Update();
         if (!s_wasOn || Driver.Player is not { } player) return;
 
         HoverAtCentre(player);

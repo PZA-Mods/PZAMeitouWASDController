@@ -1,10 +1,10 @@
-# PZA's WASD Control for Meitou: keyboard and game controller (beta 0.9.6)
+# PZA's WASD & Controller Support for Meitou (beta 0.9.9)
 
 Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
 Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
-button) to switch it on and off; while it is off, Meitou plays as usual.
+button) to switch it on and off; while it is off, Meitou plays as usual. (In game its window and settings say "PZA's WASD Control".)
 
-**Download:** the mod zip and its source zip are on the [Releases page](https://github.com/PZA-Mods/PZAMeitouDirectControl/releases). Building from source: [BUILD.md](BUILD.md).
+**Download:** the mod zip and its source zip are on the [Releases page](https://github.com/PZA-Mods/PZAMeitouWASDController/releases). Building from source: [BUILD.md](BUILD.md).
 
 ![PZA's WASD Control: the controller layout](media/controller-layout.png)
 
@@ -24,8 +24,9 @@ button) to switch it on and off; while it is off, Meitou plays as usual.
 
 Ctrl and P are left alone on purpose (Meitou's camera orbit and photo mode). Nothing fires while you type in a text box.
 
-**Game controller** (the picture above): left stick steers (light push walks, full push runs), right stick looks, the face buttons act and select, LB / RB
-switch squad members (hold RB for the squad wheel). The full layout is on the window's CONTROLLER tab. A Switch Pro controller works best
+**Game controller** (the picture above): left stick steers (a light push walks, medium jogs, full runs), right stick looks, the face buttons act and select, LB / RB
+switch squad members. Hold RB for the squad dial: aim at a face and let go to take control; its slices also give ALL (everyone), PACE (squad
+pace on / off) and FOLLOW (the rest of the squad follows you). RT / ZR is left free for other mods. The full layout is on the window's CONTROLLER tab. A Switch Pro controller works best
 when Meitou is started through Steam (as a non-Steam game), so Steam Input handles it.
 
 ## The window
@@ -37,17 +38,17 @@ PZA's WASD Control**.
 **Meitou 0.20.1 up to 0.21.x.** It refuses to load on other Meitou versions.
 
 ## Install
-- Unpack `PZAWASDControl.Meitou-0.9.6-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
+- Unpack `PZAWASDControl.Meitou-0.9.9-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
   **PZAWASDControl** in Meitou's mod list.
 - No items or world data; load order doesn't matter. Safe to remove at any time.
 
 ## This is a beta
-Earlier builds were played a lot (walking, stairs, the run-speed key, the controller; "working great"). **This build (0.9.6: the hover
-following the crosshair, walk or run by the stick's push) passed its offline checks on Meitou 0.20.1 and 0.21.0 but has not been played
-in game yet.**
+Earlier builds were played a lot (walking, stairs, the run-speed key, the controller; "working great"). **This build (0.9.9: walk / jog / run by the
+stick's push, squad pace and FOLLOW ME on the squad dial, right clicks in a view finding people first) passed its offline checks on Meitou
+0.20.1 and 0.21.0 but has not been played in game yet.**
 
 Known limits:
-- It steers one character at a time (the first selected one); the rest of the squad follows Meitou's own orders.
+- It steers one character at a time (the first selected one); the rest of the squad follows Meitou's own orders, or you (FOLLOW on the dial).
 - Manual combat (attacking with a key) is not in yet.
 - Texts are in English only for now.
 
