@@ -16,7 +16,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Version>0.9.21</Version>
+    <Version>0.9.24</Version>
     
     <Authors>PZA</Authors>
     <Company>PZA</Company>

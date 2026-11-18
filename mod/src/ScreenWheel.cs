@@ -4,7 +4,7 @@
 // - LB tapped: the previous squad member, as before (the game's own PreviousCharacter key);
 // - LB held: a dial of the game's screens; the right stick points at one (it stays lit), letting go of LB opens it, B cancels.
 // Each screen opens the way its own HUD button or key does: inventory / character / help through the interface's own actions
-// (PlayerInterface.ExecuteUiAction "meitou:inventory" / "meitou:stats"), map / faction / tech / crafting / squads as the overview's tabs
+// (PlayerInterface.ExecuteUiAction "inventory" / "stats", as the I and C keys), map / faction / tech / crafting / squads as the overview's tabs
 // 0 / 1 / 2 / 3 / 4 (the HUD's MAP / TEC / SQD buttons), build with the game's Build key. A screen that is open closes, as its button does.
 using System.Numerics;
 using System.Reflection;
@@ -22,8 +22,10 @@ public static class ScreenWheel
     /// <summary>The slices, clockwise from the top.</summary>
     public static readonly Entry[] Entries =
     [
-        new("screen.inventory", UiAction: "meitou:inventory"),
-        new("screen.character", UiAction: "meitou:stats"),
+        // ExecuteUiAction takes "inventory" / "stats" (the I / C keys' own call); "meitou:..." is only the HUD buttons' widget action, which
+        // ExecuteUiAction does not know (0.9.21 opened nothing for these two).
+        new("screen.inventory", UiAction: "inventory"),
+        new("screen.character", UiAction: "stats"),
         new("screen.map", Tab: 0),
         new("screen.squads", Tab: 4),
         new("screen.tech", Tab: 2),
@@ -35,8 +37,24 @@ public static class ScreenWheel
     /// <summary>While carrying someone (CharacterSnapshot.Carrying) the dial gains PUT DOWN, the game's own Put Down key (K) (user, 2026-11-17).</summary>
     public static readonly Entry PutDown = new("screen.put_down", Action: InputAction.PutDown);
 
-    /// <summary>The slices this time: the screens, plus PUT DOWN while the controlled character carries someone.</summary>
-    public static Entry[] For(bool carrying) => carrying ? [PutDown, .. Entries] : Entries;
+    /// <summary>
+    /// While the controlled character has jobs (CharacterSnapshot.Jobs) the dial gains CLEAR JOBS (user, 2026-11-17: "I can't cancel all the jobs
+    /// the selected character has can i?"): Meitou only takes one off at a time, with the X on its row of the jobs list (OrdersPanel.RemoveJob,
+    /// a RemoveJob command). This sends that same command for every job, last first so the indexes stay right; the job being worked ends as the X
+    /// ends it.
+    /// </summary>
+    public static readonly Entry ClearJobs = new("screen.clear_jobs");
+
+    /// <summary>The slices this time: the screens, plus PUT DOWN while the controlled character carries someone (first, at the top) and CLEAR
+    /// JOBS while they have jobs (last, just left of the top).</summary>
+    public static Entry[] For(bool carrying, bool hasJobs = false) =>
+        [.. carrying ? [PutDown] : Array.Empty<Entry>(), .. Entries, .. hasJobs ? [ClearJobs] : Array.Empty<Entry>()];
+
+    /// <summary>The RemoveJob commands that clear a list of <paramref name="count"/> jobs: the last index first.</summary>
+    public static IEnumerable<global::Meitou.Simulation.Production.RemoveJob> ClearCommands(global::Meitou.Simulation.CharacterId who, int count, long tick)
+    {
+        for (int i = count - 1; i >= 0; i--) yield return new(who, i) { Tick = tick };
+    }
 
     static Entry[] s_entries = Entries;
     static long s_since = -1;
@@ -60,7 +78,8 @@ public static class ScreenWheel
             if (now - s_since < SquadWheel.HoldMs) return WheelResult.None;
             s_open = true;
             s_lit = -1;
-            s_entries = For(Carrying(player));
+            var me = Me(player);
+            s_entries = For(me is not null && !me.Carrying.IsNone, me is not null && me.Jobs.Count > 0);
             Counters.Add("screens.open");
         }
 
@@ -81,9 +100,9 @@ public static class ScreenWheel
         return WheelResult.Open;
     }
 
-    /// <summary>The controlled character carries someone now.</summary>
-    static bool Carrying(object player) =>
-        Driver.ControlledId is { } id && Access.Session(player).CurrentSnapshot.Characters.FirstOrDefault(c => c.Id == id) is { } me && !me.Carrying.IsNone;
+    /// <summary>The controlled character now (null without one).</summary>
+    static global::Meitou.Simulation.CharacterSnapshot? Me(object player) =>
+        Driver.ControlledId is { } id ? Access.Session(player).CurrentSnapshot.Characters.FirstOrDefault(c => c.Id == id) : null;
 
     static void Close(string? why)
     {
@@ -106,7 +125,16 @@ public static class ScreenWheel
     {
         try
         {
-            if (e.UiAction is { } ui)
+            if (ReferenceEquals(e, ClearJobs))
+            {
+                if (Me(player) is not { } me) return;
+                var world = Access.Session(player).World;
+                int n = 0;
+                foreach (var c in ClearCommands(me.Id, me.Jobs.Count, world.Tick)) { world.Commands.Enqueue(c); n++; }
+                for (int k = 0; k < n; k++) Counters.Add("screens.job_removed");
+                Log.Line(Strings.Format("log.jobs_cleared", n));
+            }
+            else if (e.UiAction is { } ui)
             {
                 s_execute ??= AccessTools.Method(Access.PlayerInterface, "ExecuteUiAction", [typeof(string), typeof(string)]);
                 s_execute?.Invoke(player, [ui, ""]);
@@ -162,6 +190,7 @@ public static class ScreenWheel
         SquadWheel.Centred(o, s_lit >= 0 ? Strings.Get(s_entries[s_lit].Key) : Strings.Get("screens.title"), c.X, c.Y - 26 * s,
             s_lit >= 0 ? SquadWheel.Gold : SquadWheel.Faint, 1.3f * s);
         SquadWheel.Centred(o, Strings.Get("screens.hint"), c.X, c.Y + 8 * s, SquadWheel.Faint, 0.85f * s);
+        SquadWheel.Centred(o, Strings.Get("dial.cancel"), c.X, c.Y + 30 * s, SquadWheel.Faint, 0.85f * s);
         o.Flush(w, h);
     }
 }

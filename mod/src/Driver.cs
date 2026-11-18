@@ -127,7 +127,11 @@ public static class Driver
         float look = Keys.LookFactor;
         bool window = Look.WindowOpen(Player!);   // trade, inventory, loot...: the right stick moves the pointer (PadPointer)
         PadPointer.Stick(window ? pad.Right : Vector2.Zero);
-        bool menu = window || Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen || ScreenWheel.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, moves the pointer in a window, not the view
+        bool menuNow = window || Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen || ScreenWheel.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, moves the pointer in a window, not the view
+        // Play test clip 2026-11-17 20:17: the push that aimed at a face on the squad dial went on into the look once the dial closed (the view
+        // tilted to the ground). After any dial, menu or window closes the right stick looks again only once it has come back to the centre.
+        bool menu = !LookAfterMenu(ref s_menuWasOpen, ref s_waitStickCentre, menuNow, pad.Right.Length());
+        if (menu && !menuNow) Counters.Add("pad.look_wait_centre");
         if (!menu && pad.Right.X != 0) rig.Rotate(-pad.Right.X * PadYawRate * look * dt);
         if (!menu && pad.Right.Y != 0)
         {
@@ -208,6 +212,18 @@ public static class Driver
 
     /// <summary>A went down as the left button in a window: its release is the button's too, even if the window closed meanwhile.</summary>
     static bool s_aDown;
+    /// <summary>A dial, menu or window had the right stick last tick; after it closes the stick looks again only once back under <see cref="StickCentre"/>.</summary>
+    static bool s_menuWasOpen, s_waitStickCentre;
+    public const float StickCentre = 0.2f;
+
+    /// <summary>The right stick's look after a dial, menu or window closed (for the offline check): false until the stick has come back.</summary>
+    public static bool LookAfterMenu(ref bool wasOpen, ref bool wait, bool menuNow, float push)
+    {
+        if (wasOpen && !menuNow) wait = true;
+        wasOpen = menuNow;
+        if (wait && push < StickCentre) wait = false;
+        return !menuNow && !wait;
+    }
 
     /// <summary>The B press closed a window: neither its press nor its release is a click.</summary>
     static bool s_eastClosed;
@@ -511,7 +527,9 @@ public static class Driver
         if (s_padTiltRate != 0) Views.Tilt(s_padTiltRate * dt);   // the stick's tilt, frame by frame
         float pitch = Views.EasePitch();
         camera.Pitch = pitch;   // the views' own tilt, past the rig's limit
-        var (target, distance) = Views.Pose(Views.Current, feet, head, camera.Yaw, pitch, Keys.ShoulderSign);
+        bool carrying = !lead.Carrying.IsNone;
+        if (carrying) Counters.Add("view.carrying");
+        var (target, distance) = Views.Pose(Views.Current, feet, head, camera.Yaw, pitch, Keys.ShoulderSign, carrying);
         camera.Target = target;
         camera.Distance = distance;
         Counters.Add("view.frames");

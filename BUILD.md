@@ -2,7 +2,7 @@
 
 Author: PZA. Licence: GNU GPL version 3 or later (`LICENSE`).
 
-This is the source of PZA's WASD & Controller Support for Meitou 0.9.21 (beta, commit `b1f5209` of the development repository). Each release also carries a `-source.zip` with everything the DLL is built from, the shared code included.
+This is the source of PZA's WASD & Controller Support for Meitou 0.9.24 (beta, commit `c036d13` of the development repository). Each release also carries a `-source.zip` with everything the DLL is built from, the shared code included.
 
 You need:
 - the .NET SDK (10 or newer)

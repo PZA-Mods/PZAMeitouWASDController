@@ -1,4 +1,4 @@
-# PZA's WASD & Controller Support for Meitou (beta 0.9.21)
+# PZA's WASD & Controller Support for Meitou (beta 0.9.24)
 
 Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
 Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
@@ -9,6 +9,18 @@ button) to switch it on and off; while it is off, Meitou plays as usual.
 **Download:** the mod zip and its source zip are on the [Releases page](https://github.com/PZA-Mods/PZAMeitouWASDController/releases). Building from source: [BUILD.md](BUILD.md).
 
 ![PZA's WASD & Controller Support: the controller layout](media/controller-layout.png)
+
+## In action
+
+![Pick someone up and carry them, then "Follow me!" from the squad dial](https://images.steamusercontent.com/ugc/16769140161264887818/8A45C3B57042E28C195DB73EA50B95C9CB5681C7/)
+
+![The screens dial: the map, then PUT DOWN](https://images.steamusercontent.com/ugc/16413674677192102656/1D57F7E1549CCB04A82A3A6C0A8FF56239CC6CB9/)
+
+![Trading with the controller: the right stick moves the pointer, A clicks, B closes](https://images.steamusercontent.com/ugc/17742831332842439697/1260C85EE06802644CA95B194D0656FE443C2713/)
+
+| Squad dial (hold RB) | Screens dial (hold LB) | While carrying |
+|---|---|---|
+| ![Squad dial](media/wasd-squad-dial.jpg) | ![Screens dial](media/wasd-screens-dial-map.jpg) | ![Screens dial with PUT DOWN](media/wasd-screens-dial-put-down.jpg) |
 
 ## Keyboard and mouse
 
@@ -33,13 +45,13 @@ and loot windows free the pointer by themselves.
 - **Right stick:** look around, up and down too.
 - **RT / ZR:** interact: a tap does what a right click does (attacks a hostile, talks to a friend, loots). **Hold ZR** for the full menu
   (stealth knockout and the other attacks too), aim with the stick, let go to pick.
-- **A** (bottom button): in a trade, inventory or loot window, the click (the right stick moves the pointer there); free otherwise.
-- **B** (right button): select / inspect; closes a trade, inventory or loot window.
+- **A** (bottom button): in a window (trade, inventory, loot, the map and the other screens), the click (the right stick moves the pointer there); free otherwise.
+- **B** (right button): select / inspect; closes a window; cancels a dial.
 - **Y / X:** over-the-shoulder view / first-person view.
 - **LB / RB:** previous / next squad member.
-  - **Hold LB** for the **screens dial:** inventory, character, map, squads, tech, crafting, build, faction, and PUT DOWN while you carry
-    someone; aim and let go to open.
-  - **Hold RB** for the **squad dial:** your squad's faces in a circle; aim and let go to take control. Top: **everyone**. Bottom: **squad
+  - **Hold LB** for the **screens dial:** inventory, character, map, squads, tech, crafting, build, faction, PUT DOWN while you carry
+    someone and CLEAR JOBS while your character has jobs; aim and let go to open, **B** cancels.
+  - **Hold RB** for the **squad dial:** your squad's faces in a circle; aim and let go to take control, **B** cancels. Top: **everyone**. Bottom: **squad
     pace** on / off. Left: **follow me** (your character calls "Follow me!" and the rest of the squad follows you; choose it again and they
     stop). Big squads get pages (D-pad or LB).
 - **LT / ZL (hold):** highlight; with ZR: loot / steal. **LT + B:** stop.
@@ -59,17 +71,18 @@ on **Settings > Mods** under the mod's row.
 
 ## Install
 - **Workshop:** subscribe, then tick **PZAWASDControlMeitou** in Meitou's mod list.
-- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.9.21-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
+- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.9.24-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
   **PZAWASDControl** in Meitou's mod list.
 - No items or world data; load order doesn't matter. Safe to remove at any time.
 
 ## This is a beta
-The basics (walking, stairs, the views, the controller) were played a lot. **This build (0.9.21) passed its offline checks on Meitou 0.20.1
-and 0.21.0; its newest parts are not played in game yet:** ZR as interact (its tap attacks a hostile), the controller pointer and A in trade /
-inventory / loot windows, the screens dial with PUT DOWN, follow me on / off, squad pace with the stick.
+The basics (walking, stairs, the views, the controller) were played a lot, and so were ZR as interact, the controller pointer in trade
+windows, the squad and screens dials with PUT DOWN and "Follow me!". **This build (0.9.24) passed its offline checks on Meitou 0.20.1 and
+0.21.0; its newest parts are not played in game yet:** CLEAR JOBS on the screens dial, the camera moving out of the way while you carry
+someone, "B: cancel" on the dials, and the right stick waiting for the middle after a dial closes.
 
 Known limits:
-- Removing one job from a character's job list has no controller shortcut yet (mouse or keyboard).
+- Removing a single job from a character's job list has no controller shortcut yet (CLEAR JOBS removes them all).
 - A right click on your own squad member in a view usually opens nothing (Meitou has no action for them there).
 - The squad dial shows the squad bar's members, at most 30.
 - Follow me's on / off only knows the follows it started itself.
@@ -81,7 +94,7 @@ Known limits:
 - Texts are in English only for now.
 
 ## Planned
-Ideas, no dates: jobs on the controller (remove one from a dial), a new use for A, actions for your own squad members in a view, mouse-wheel
+Ideas, no dates: jobs on the controller (remove one from a dial; clearing them all is in), a new use for A, actions for your own squad members in a view, mouse-wheel
 steps into the views, vibration when your character is hit, texts in Russian, Chinese and Japanese.
 
 ## Reporting a bug

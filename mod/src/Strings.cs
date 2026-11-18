@@ -11,7 +11,7 @@ public static class Strings
     public static class En
     {
         public const string StickWalkLabel = "Stick push: walk, jog or run";
-        public const string StickWalkHint = "Controller: a light push on the left stick walks, a medium push jogs, a full push runs. Squad pace (squad dial, or X) is left alone. Let go and your speed is back.";
+        public const string StickWalkHint = "Controller: a light push on the left stick walks, a medium push jogs, a full push runs. With squad pace on (squad dial, or X) the full push keeps the squad together. Let go and your speed is back.";
         public const string KeysGroup = "Keys";
         public const string ViewsGroup = "Views";
         public const string WindowGroup = "Window";
@@ -115,20 +115,20 @@ public static class Strings
         ["key.take"] = "Take control (point at your character)",
         ["tiny.on"] = "WASD ON",
         ["tiny.off"] = "WASD OFF",
-        ["win.pad"] = "Controller: left stick move, right stick look, right stick click camera behind you (hold: look back), A interact (hold for the menu), B select, L / R previous / next member, left stick click sneak, ZL hold highlight (ZL + A loots / steals), ZR run speed, ZL + ZR stop, top button over the shoulder, left button first person, D-pad zoom and game speed, + pause, - on / off.",
         ["help.1"] = "WASD & Controller steers the first selected character with W A S D, relative to the camera, and the camera follows them. Let go and they stop. Stairs, walls and ledges are followed as when you right-click.",
-        ["help.2"] = "Views: over the shoulder and first person. In a view the mouse looks around, the cursor in the middle is your crosshair: right-click a person for their menu, an object for its action; left-click one of your people to see their info. Hold Alt for a free cursor. Bare ground does nothing: walk with W A S D.",
+        ["help.2"] = "Views: over the shoulder and first person. In a view the mouse looks around, the cursor in the middle is your crosshair: right-click a person for their menu, an object for its action; left-click one of your people to see their info. Hold Alt for a free cursor. Bare ground does nothing: walk with W A S D. While you carry someone the views move out of the way: over the shoulder looks from higher and further back, first person from a little further forward.",
         ["help.3"] = "Controller: any pad Windows or Steam knows. A Switch Pro controller needs Meitou started through Steam (Steam Input). A pad that presses buttons by itself is ignored, with a line in the log.",
-        ["help.4"] = "The Keys tab changes the mod's keys. X is Meitou's own run speed, Numpad 4 its sneak. PZA's WASD & Controller Support is by PZA, inspired by Direct Control for Kenshi (smokefoolius).",
+        ["help.4"] = "Controller dials: hold RB for the squad dial, LB for the screens dial. Aim with the right stick, let go of the bumper to pick; B cancels, and letting go without aiming does nothing. After a dial, menu or window closes, the right stick looks around again once it is back in the middle.",
+        ["help.5"] = "The Keys tab changes the mod's keys. X is Meitou's own run speed, Numpad 4 its sneak. PZA's WASD & Controller Support is by PZA, inspired by Direct Control for Kenshi (smokefoolius).",
         ["pad.1"] = "Left stick: move (relative to the camera); light push walk, medium jog, full run",
         ["pad.2"] = "Left stick click (L3): sneak on / off",
         ["pad.3"] = "Right stick: look around / turn the camera",
         ["pad.4"] = "Right stick click (R3): camera behind you; hold to look back",
-        ["pad.5"] = "Bottom button (Xbox A, Switch B): in a trade, inventory or loot window: click (the right stick moves the pointer); picks in a menu; otherwise free",
-        ["pad.6"] = "Right button (Xbox B, Switch A): select / inspect; closes a trade, inventory or loot window",
+        ["pad.5"] = "Bottom button (Xbox A, Switch B): in a window (trade, inventory, loot, map and the other screens): click, the right stick moves the pointer; picks in a menu; otherwise free",
+        ["pad.6"] = "Right button (Xbox B, Switch A): select / inspect; closes a window; cancels a dial",
         ["pad.7"] = "Top button (Xbox Y, Switch X): over-the-shoulder view",
         ["pad.8"] = "Left button (Xbox X, Switch Y): first-person view",
-        ["pad.9"] = "LB / L: tap previous squad member; hold for the screens dial (inventory, character, map, squads, tech, crafting, build, faction)",
+        ["pad.9"] = "LB / L: tap previous squad member; hold for the screens dial (inventory, character, map, squads, tech, crafting, build, faction; PUT DOWN while carrying, CLEAR JOBS while the character has jobs; right stick aims, let go to open, B cancels)",
         ["pad.10"] = "RB / R: tap next squad member; hold for the squad wheel (right stick aims, let go to take control; top: everyone; bottom: squad pace; left: follow me; B cancels)",
         ["pad.11"] = "LT / ZL (hold): highlight; with RT / ZR: loot / steal; with the right button: stop",
         ["pad.12"] = "RT / ZR: interact (a right click: attacks a hostile, talks to a friend, loots); hold for the menu, aim, let go to pick",
@@ -144,6 +144,8 @@ public static class Strings
         ["bark.follow_me"] = "Follow me!",
         ["bark.stop_following"] = "Stop following!",
         ["screen.put_down"] = "PUT DOWN",
+        ["screen.clear_jobs"] = "CLEAR JOBS",
+        ["log.jobs_cleared"] = "WASD Control: screens dial: {0} job(s) cleared from the controlled character.",
         ["screen.inventory"] = "INVENTORY",
         ["screen.character"] = "CHARACTER",
         ["screen.map"] = "MAP",
@@ -154,6 +156,7 @@ public static class Strings
         ["screen.faction"] = "FACTION",
         ["screens.title"] = "SCREENS",
         ["screens.hint"] = "Aim, let go of LB",
+        ["dial.cancel"] = "B: cancel",
         ["wheel.follow"] = "FOLLOW ME",
         ["wheel.follow_sub"] = "the rest",
         ["wheel.follow_name"] = "Everyone follows you",

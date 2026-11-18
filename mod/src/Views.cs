@@ -26,6 +26,12 @@ public static class Views
     public const float ShoulderDistance = 20, ShoulderHeight = 15, ShoulderSide = 4;
     /// <summary>First person: how far in front of the head bone the eye sits (out of the face), and the tiny boom that puts the eye there.</summary>
     public const float FaceAhead = 2, FirstBoom = 1;
+    /// <summary>
+    /// Carrying someone (play test clip 2026-11-17 19:55: the carried body on the shoulder filled half the over-the-shoulder view, and the first
+    /// person eye sat inside it for a moment): the shoulder view looks from higher, further back and further out to the side, over the body;
+    /// first person moves the eye further out of the face and a little up, past the body beside the head.
+    /// </summary>
+    public const float CarryShoulderDistance = 32, CarryShoulderHeight = 22, CarryShoulderSide = 7, CarryFaceAhead = 6, CarryEyeLift = 1.5f;
     /// <summary>The head's height above the feet when the head bone is not drawn (a typical human's, used for a frame or two).</summary>
     public const float HeadFallback = 16;
     /// <summary>
@@ -90,26 +96,33 @@ public static class Views
     /// The over-the-shoulder boom: full while looking level or down; looking up it shortens so the eye stays above the ground (the eye sits
     /// below the look point by boom * sin(-pitch)), as a game camera pulls in when it tilts up: at most ShoulderHeight - 4 below the look point.
     /// </summary>
-    public static float ShoulderBoom(float pitch)
+    public static float ShoulderBoom(float pitch, bool carrying = false)
     {
+        float distance = carrying ? CarryShoulderDistance : ShoulderDistance, height = carrying ? CarryShoulderHeight : ShoulderHeight;
         float down = -MathF.Sin(pitch);
-        if (down <= 0) return ShoulderDistance;
+        if (down <= 0) return distance;
 
-        return MathF.Max(MathF.Min(ShoulderDistance, (ShoulderHeight - 4) / down), 6);
+        return MathF.Max(MathF.Min(distance, (height - 4) / down), 6);
     }
 
     /// <summary>
     /// The orbit camera's look point and boom for a view (WorldCamera: eye = target + back · distance, back = (cos p · sin y, sin p, cos p · cos y)).
     /// Over-the-shoulder: the look point above the feet, shifted to the camera's right. First person: the eye just in front of the head.
+    /// <paramref name="carrying"/>: the controlled character carries someone (the Carry* values).
     /// </summary>
-    public static (Vector3 Target, float Distance) Pose(View view, Vector3 feet, Vector3? head, float yaw, float pitch, float side = 1)
+    public static (Vector3 Target, float Distance) Pose(View view, Vector3 feet, Vector3? head, float yaw, float pitch, float side = 1, bool carrying = false)
     {
         var back = new Vector3(MathF.Cos(pitch) * MathF.Sin(yaw), MathF.Sin(pitch), MathF.Cos(pitch) * MathF.Cos(yaw));
         var right = new Vector3(MathF.Cos(yaw), 0, -MathF.Sin(yaw));
-        if (view == View.Shoulder) return (feet + new Vector3(0, ShoulderHeight, 0) + right * (ShoulderSide * side), ShoulderBoom(pitch));
+        if (view == View.Shoulder)
+        {
+            float height = carrying ? CarryShoulderHeight : ShoulderHeight, shift = carrying ? CarryShoulderSide : ShoulderSide;
+            return (feet + new Vector3(0, height, 0) + right * (shift * side), ShoulderBoom(pitch, carrying));
+        }
 
         var forward = new Vector3(-MathF.Sin(yaw), 0, -MathF.Cos(yaw));
-        var eye = (head ?? feet + new Vector3(0, HeadFallback, 0)) + forward * FaceAhead;
+        var eye = (head ?? feet + new Vector3(0, HeadFallback, 0)) + forward * (carrying ? CarryFaceAhead : FaceAhead)
+            + new Vector3(0, carrying ? CarryEyeLift : 0, 0);
         return (eye - back * FirstBoom, FirstBoom);
     }
 }

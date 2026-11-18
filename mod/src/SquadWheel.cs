@@ -336,6 +336,7 @@ public static class SquadWheel
         Centred(o, name, c.X, c.Y - 30 * s, Gold, 1.35f * s);
         if (pages > 1) Centred(o, Strings.Format("wheel.page", s_page + 1, pages), c.X, c.Y + 4 * s, Faint, 0.95f * s);
         Centred(o, Strings.Get(pages > 1 ? "wheel.hint_pages" : "wheel.hint"), c.X, c.Y + (pages > 1 ? 28 : 8) * s, Faint, 0.85f * s);
+        Centred(o, Strings.Get("dial.cancel"), c.X, c.Y + (pages > 1 ? 50 : 30) * s, Faint, 0.85f * s);
         o.Flush(w, h);
     }
 
