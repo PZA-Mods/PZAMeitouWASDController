@@ -73,7 +73,7 @@ public static class Menus
             s_wasOpen = true;
             s_padRow = 0;
             s_moved = false;
-            s_holdPick = pad.Down(PadButton.South);
+            s_holdPick = pad.Down(PadButton.RightTrigger);   // ZR is interact since 0.9.19
         }
 
         int rows = Access.ContextMenuRows(player);
@@ -94,7 +94,7 @@ public static class Menus
             s_holdPick = false;
             Counters.Add("menu.pad_close");
         }
-        else if (s_holdPick && global::PZA.WASDControl.Meitou.Pad.WasReleased(PadButton.South))
+        else if (s_holdPick && global::PZA.WASDControl.Meitou.Pad.WasReleased(PadButton.RightTrigger))
         {
             s_holdPick = false;
             if (s_moved)
@@ -104,7 +104,7 @@ public static class Menus
             }
             else Counters.Add("menu.pad_release_kept_open");
         }
-        else if (Pad_(PadButton.South))
+        else if (Pad_(PadButton.South) || Pad_(PadButton.RightTrigger))
         {
             Access.ContextMenuPick(player, s_padRow);
             Counters.Add("menu.pad_pick");

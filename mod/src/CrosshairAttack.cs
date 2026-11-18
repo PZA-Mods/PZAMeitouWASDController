@@ -1,5 +1,5 @@
 // PZA's WASD & Controller Support (Meitou). Author: PZA. Licence: GPLv3 or later.
-// ZR: attack what the crosshair is on (user, 2026-11-17: "Maybe Z3 can function to just... attack what you're targeting (not manual attack
+// A (ZR until 0.9.18): attack what the crosshair is on (user, 2026-11-17: "Maybe Z3 can function to just... attack what you're targeting (not manual attack
 // from Direct Control, but a start ...) Could probably be used for other stuff, with context... like holding"; then "Yes, ZR").
 // The target is the person under the crosshair in a view (the screen's centre), else under the pointer; a near miss looks around it for a
 // person (Clicks.PersonNear). The order is the right-click menu's own verb for that target (ContextMenuWindow.Verbs), so Meitou's rules
@@ -15,7 +15,10 @@ namespace PZA.WASDControl.Meitou;
 
 public static class CrosshairAttack
 {
-    /// <summary>ZR held this long gives the hold's verb (ms).</summary>
+    /// <summary>The attack button: A (the bottom face button) since 0.9.19 (ZR before; ZR is interact now).</summary>
+    public const PadButton Button = PadButton.South;
+
+    /// <summary>The attack button held this long gives the hold's verb (ms).</summary>
     public const long HoldMs = 350;
 
     static long s_since = -1;
@@ -34,15 +37,14 @@ public static class CrosshairAttack
     public static void Pad(object player, PadState pad, bool zl)
     {
         long now = Environment.TickCount64;
-        if (global::PZA.WASDControl.Meitou.Pad.WasPressed(PadButton.RightTrigger))
+        if (global::PZA.WASDControl.Meitou.Pad.WasPressed(Button))
         {
-            s_since = zl ? -1 : now;
+            s_since = now;
             s_held = false;
         }
         if (s_since < 0) return;
-        if (zl) { s_since = -1; return; }   // ZL joined: the stop chord
 
-        bool down = pad.Down(PadButton.RightTrigger);
+        bool down = pad.Down(Button);
         if (down && !s_held && now - s_since >= HoldMs)
         {
             s_held = true;

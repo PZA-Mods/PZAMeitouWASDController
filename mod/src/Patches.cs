@@ -101,6 +101,7 @@ public static class Patches
         try
         {
             Look.Frame(__instance);
+            PadPointer.Frame(__instance);   // the controller's pointer in game windows
         }
         catch (Exception e)
         {

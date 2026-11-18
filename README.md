@@ -1,4 +1,4 @@
-# PZA's WASD & Controller Support for Meitou (beta 0.9.18)
+# PZA's WASD & Controller Support for Meitou (beta 0.9.21)
 
 Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
 Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
@@ -31,17 +31,18 @@ and loot windows free the pointer by themselves.
 
 - **Left stick:** move. A light push walks, a medium push jogs, a full push runs (with squad pace on, the full push keeps the squad together).
 - **Right stick:** look around, up and down too.
-- **A** (bottom button): interact. **Hold A** for the menu, aim with the stick, let go to pick.
+- **RT / ZR:** interact: a tap does what a right click does (attacks a hostile, talks to a friend, loots). **Hold ZR** for the full menu
+  (stealth knockout and the other attacks too), aim with the stick, let go to pick.
+- **A** (bottom button): in a trade, inventory or loot window, the click (the right stick moves the pointer there); free otherwise.
 - **B** (right button): select / inspect; closes a trade, inventory or loot window.
 - **Y / X:** over-the-shoulder view / first-person view.
 - **LB / RB:** previous / next squad member.
-  - **Hold LB** for the **screens dial:** inventory, character, map, squads, tech, crafting, build, faction; aim and let go to open.
+  - **Hold LB** for the **screens dial:** inventory, character, map, squads, tech, crafting, build, faction, and PUT DOWN while you carry
+    someone; aim and let go to open.
   - **Hold RB** for the **squad dial:** your squad's faces in a circle; aim and let go to take control. Top: **everyone**. Bottom: **squad
-    pace** on / off. Left: **follow me** (your character calls "Follow me!" and the rest of the squad follows you). Big squads get pages
-    (D-pad or LB).
-- **RT / ZR:** attack what the crosshair is on (a hostile). **Hold**: a stealth knockout from behind when the game offers one, otherwise an
-  attack on anyone (with the game's usual consequences).
-- **LT / ZL (hold):** highlight; with A: loot / steal. **LT + RT together:** stop.
+    pace** on / off. Left: **follow me** (your character calls "Follow me!" and the rest of the squad follows you; choose it again and they
+    stop). Big squads get pages (D-pad or LB).
+- **LT / ZL (hold):** highlight; with ZR: loot / steal. **LT + B:** stop.
 - **L3:** sneak. **R3:** camera behind you; hold to look back.
 - **D-pad:** zoom (normal view), game speed. **Menu / +:** pause; hold for the game menu. **View / -:** on / off.
 
@@ -58,27 +59,30 @@ on **Settings > Mods** under the mod's row.
 
 ## Install
 - **Workshop:** subscribe, then tick **PZAWASDControlMeitou** in Meitou's mod list.
-- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.9.18-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
+- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.9.21-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
   **PZAWASDControl** in Meitou's mod list.
 - No items or world data; load order doesn't matter. Safe to remove at any time.
 
 ## This is a beta
-The basics (walking, stairs, the views, the controller) were played a lot. **This build (0.9.18) passed its offline checks on Meitou 0.20.1
-and 0.21.0; its newest parts are not played in game yet:** the screens dial (hold LB), the stick under squad pace and "Follow me!", ZR's
-attack, B closing windows, the crosshair looking past your own character, the game menu on a held Menu / +.
+The basics (walking, stairs, the views, the controller) were played a lot. **This build (0.9.21) passed its offline checks on Meitou 0.20.1
+and 0.21.0; its newest parts are not played in game yet:** ZR as interact (its tap attacks a hostile), the controller pointer and A in trade /
+inventory / loot windows, the screens dial with PUT DOWN, follow me on / off, squad pace with the stick.
 
 Known limits:
-- The controller cannot move the mouse pointer, so trade, inventory, loot, job lists and building screens are worked with the mouse (B closes them).
+- Removing one job from a character's job list has no controller shortcut yet (mouse or keyboard).
 - A right click on your own squad member in a view usually opens nothing (Meitou has no action for them there).
 - The squad dial shows the squad bar's members, at most 30.
+- Follow me's on / off only knows the follows it started itself.
 - With Settings' Hardware mouse on there is no crosshair (the look still works).
 - It steers one character at a time (the first selected one); the rest follow Meitou's own orders, or you (follow me).
-- No manual combat (attack / block / dodge with keys); the controller gives the game's own attack orders.
+- No manual combat (attack / block / dodge with keys); ZR gives the game's own attack orders.
+- D-pad zoom works in the normal view only.
+- Controller buttons cannot be rebound yet (keyboard keys can).
 - Texts are in English only for now.
 
 ## Planned
-Ideas, no dates: jobs on the controller (remove one from a dial), a pointer for the controller in windows, actions for your own squad
-members in a view, mouse-wheel steps into the views, texts in Russian, Chinese and Japanese.
+Ideas, no dates: jobs on the controller (remove one from a dial), a new use for A, actions for your own squad members in a view, mouse-wheel
+steps into the views, vibration when your character is hit, texts in Russian, Chinese and Japanese.
 
 ## Reporting a bug
 What happened, how to make it happen again, keyboard or which controller, your Meitou version and mod list, and Meitou's `log.txt` (in your

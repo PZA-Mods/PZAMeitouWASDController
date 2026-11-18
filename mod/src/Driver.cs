@@ -125,7 +125,9 @@ public static class Driver
 
         var rig = session.Camera.Strategy;
         float look = Keys.LookFactor;
-        bool menu = Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen || ScreenWheel.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, not the view
+        bool window = Look.WindowOpen(Player!);   // trade, inventory, loot...: the right stick moves the pointer (PadPointer)
+        PadPointer.Stick(window ? pad.Right : Vector2.Zero);
+        bool menu = window || Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen || ScreenWheel.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, moves the pointer in a window, not the view
         if (!menu && pad.Right.X != 0) rig.Rotate(-pad.Right.X * PadYawRate * look * dt);
         if (!menu && pad.Right.Y != 0)
         {
@@ -186,6 +188,12 @@ public static class Driver
             s_eastClosed = true;
             Counters.Add("pad.close_window");
         }
+        // A is the left button while a game window is open (pick up, drop, buy, sell); otherwise free (0.9.21).
+        if (Look.WindowOpen(Player!) || s_aDown)
+        {
+            if (Pad.WasPressed(PadButton.South)) { Click(MouseButton.Left, true); s_aDown = true; }
+            if (Pad.WasReleased(PadButton.South) && s_aDown) { Click(MouseButton.Left, false); s_aDown = false; }
+        }
         foreach (var (button, mouse) in PadMouse)
         {
             bool closing = button == PadButton.East && s_eastClosed;
@@ -198,11 +206,14 @@ public static class Driver
         }
     }
 
+    /// <summary>A went down as the left button in a window: its release is the button's too, even if the window closed meanwhile.</summary>
+    static bool s_aDown;
+
     /// <summary>The B press closed a window: neither its press nor its release is a click.</summary>
     static bool s_eastClosed;
 
     static readonly (PadButton Button, MouseButton Mouse)[] PadMouse =
-        [(PadButton.South, MouseButton.Right), (PadButton.East, MouseButton.Left)];
+        [(PadButton.RightTrigger, MouseButton.Right), (PadButton.East, MouseButton.Left)];   // ZR interact (0.9.19; was A), B select
 
     static void Click(MouseButton mouse, bool down)
     {
@@ -245,24 +256,25 @@ public static class Driver
 
     /// <summary>ZL is held: the game's highlight (Alt) is held for the pad, so loot names show and A becomes Alt + right click (loot, steal).</summary>
     public static bool PadHighlight { get; private set; }
-    /// <summary>ZL and ZR were pressed together: stop, given once until both are let go.</summary>
-    static bool s_chord;
 
-    /// <summary>ZL (hold) highlight; ZL + ZR together stop; ZR alone attacks the crosshair's target (CrosshairAttack).</summary>
+    /// <summary>
+    /// ZL (hold) highlight, so ZL + ZR (interact) is loot / steal; ZL + B stop; A is free (0.9.20). The user,
+    /// 2026-11-17: "ZR should actually probably do what A does. A should be the button to attack a hostile"; the stop moved from ZL + ZR to
+    /// ZL + B (ZL + interact had been loot / steal since 0.8.1).
+    /// </summary>
     static void PadTriggers(PadState pad, WorldSession session)
     {
-        bool zl = pad.Down(PadButton.LeftTrigger), zr = pad.Down(PadButton.RightTrigger);
+        bool zl = pad.Down(PadButton.LeftTrigger);
         SetHighlight(session, zl);
 
-        bool chordNow = Pad.WasPressed(PadButton.RightTrigger) && zl || Pad.WasPressed(PadButton.LeftTrigger) && zr;
-        if (chordNow && !s_chord)
+        if (zl && Pad.WasPressed(PadButton.East))
         {
-            s_chord = true;
             PressGame(session, InputAction.StopMovement);
+            s_eastClosed = true;   // this B is the stop's, not a click
+            Counters.Add("pad.stop_chord");
         }
-        // ZR alone: attack what the crosshair is on (tap), the deliberate attack / stealth KO (hold) (CrosshairAttack, 0.9.11).
-        CrosshairAttack.Pad(Player!, pad, zl);
-        if (!zl && !zr) s_chord = false;
+        // A is free since 0.9.20 (the user: "Leave A for something new"): ZR's tap already attacks a hostile (the right click's quick
+        // order) and its held menu has every attack. CrosshairAttack stays in the source for a later use.
     }
 
     /// <summary>
@@ -276,12 +288,31 @@ public static class Driver
         var others = SquadWheel.Members.Where(i => i != leader).ToArray();
         if (others.Length == 0) { Counters.Add("follow.alone"); return; }
 
-        session.World.Commands.Enqueue(new global::Meitou.Simulation.FollowOrder(others, leader) { Tick = session.World.Tick });
+        long tick = session.World.Tick;
+        if (FollowingNow(leader))
+        {
+            // Chosen again while the squad follows this leader: they stop (user, 2026-11-17: "selecting again from radial menu should turn it
+            // off and the character being followed should say 'Stop following!'"). Meitou's stop clears a follow order (PlayerSystem.Stop).
+            session.World.Commands.Enqueue(new StopCommand(others) { Tick = tick });
+            session.World.Commands.Enqueue(new BarkCommand(leader, Strings.Get("bark.stop_following")) { Tick = tick });
+            s_followLeader = null;
+            Counters.Add("follow.stopped");
+            return;
+        }
+
+        session.World.Commands.Enqueue(new global::Meitou.Simulation.FollowOrder(others, leader) { Tick = tick });
         // the leader says it (user, 2026-11-17: "should make the selected character say 'Follow me!' with a text bubble over their head")
-        session.World.Commands.Enqueue(new BarkCommand(leader, Strings.Get("bark.follow_me")) { Tick = session.World.Tick });
+        session.World.Commands.Enqueue(new BarkCommand(leader, Strings.Get("bark.follow_me")) { Tick = tick });
+        s_followLeader = leader;
         Counters.Add("follow.me");
         Log.Line(Strings.Format("log.follow_me", others.Length));
     }
+
+    /// <summary>The leader the squad was last told to follow from the dial (null after a stop), for the dial's toggle.</summary>
+    static CharacterId? s_followLeader;
+
+    /// <summary>The squad follows <paramref name="leader"/> from the dial's last FOLLOW ME (the dial shows "Stop following" then).</summary>
+    public static bool FollowingNow(CharacterId leader) => s_followLeader == leader;
 
     /// <summary>
     /// The squad dial's SQUAD PACE: Meitou's group speed for the dial's squad (everyone at the slowest member), or off again (full run).

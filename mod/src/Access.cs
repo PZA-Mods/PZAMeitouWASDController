@@ -320,6 +320,14 @@ public static class Access
         return true;
     }
 
+    /// <summary>The OS pointer's position in window coordinates (the loop's first mouse), or null.</summary>
+    public static Vector2? LoopPointer(object loop)
+    {
+        if (s_loopMice.GetValue(loop) is not System.Collections.IEnumerable mice) return null;
+        foreach (var mouse in mice) return mouse.GetType().GetProperty("Position")?.GetValue(mouse) as Vector2?;
+        return null;
+    }
+
     /// <summary>Puts the OS pointer, the loop's last pointer position and (when already pinned) the pinned point at <paramref name="centre"/>.</summary>
     public static void CentrePointer(object loop, Vector2 centre)
     {

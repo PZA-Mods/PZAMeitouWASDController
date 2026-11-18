@@ -32,6 +32,13 @@ public static class ScreenWheel
         new("screen.faction", Tab: 1),
     ];
 
+    /// <summary>While carrying someone (CharacterSnapshot.Carrying) the dial gains PUT DOWN, the game's own Put Down key (K) (user, 2026-11-17).</summary>
+    public static readonly Entry PutDown = new("screen.put_down", Action: InputAction.PutDown);
+
+    /// <summary>The slices this time: the screens, plus PUT DOWN while the controlled character carries someone.</summary>
+    public static Entry[] For(bool carrying) => carrying ? [PutDown, .. Entries] : Entries;
+
+    static Entry[] s_entries = Entries;
     static long s_since = -1;
     static bool s_open;
     static int s_lit = -1;
@@ -53,10 +60,11 @@ public static class ScreenWheel
             if (now - s_since < SquadWheel.HoldMs) return WheelResult.None;
             s_open = true;
             s_lit = -1;
+            s_entries = For(Carrying(player));
             Counters.Add("screens.open");
         }
 
-        int slot = SquadWheel.SlotAt(pad.Right, Entries.Length);
+        int slot = SquadWheel.SlotAt(pad.Right, s_entries.Length);
         if (slot >= 0 && slot != s_lit) { s_lit = slot; Counters.Add("screens.aim"); }
 
         if (global::PZA.WASDControl.Meitou.Pad.WasPressed(PadButton.East))
@@ -68,10 +76,14 @@ public static class ScreenWheel
 
         int lit = s_lit;
         Close(null);
-        if (lit >= 0) Open(player, Entries[lit], pressGame);
+        if (lit >= 0) Open(player, s_entries[lit], pressGame);
         else Counters.Add("screens.released_empty");
         return WheelResult.Open;
     }
+
+    /// <summary>The controlled character carries someone now.</summary>
+    static bool Carrying(object player) =>
+        Driver.ControlledId is { } id && Access.Session(player).CurrentSnapshot.Characters.FirstOrDefault(c => c.Id == id) is { } me && !me.Carrying.IsNone;
 
     static void Close(string? why)
     {
@@ -123,7 +135,7 @@ public static class ScreenWheel
     // ---------------------------------------------------------------- the dial
     internal static void Draw(DebugOverlay o, int w, int h)
     {
-        int slots = Entries.Length;
+        int slots = s_entries.Length;
         var c = new Vector2(w / 2f, h / 2f);
         float s = h / 1080f, radius = 230 * s, inner = radius - 70 * s, outer = radius + 70 * s, step = MathF.Tau / slots;
 
@@ -145,9 +157,9 @@ public static class ScreenWheel
         for (int i = 0; i < slots; i++)
         {
             var p = SquadWheel.SlotCentre(c, i, slots, radius);
-            SquadWheel.Centred(o, Strings.Get(Entries[i].Key), p.X, p.Y - 9 * s, i == s_lit ? SquadWheel.Gold : SquadWheel.Ink, 1.05f * s);
+            SquadWheel.Centred(o, Strings.Get(s_entries[i].Key), p.X, p.Y - 9 * s, i == s_lit ? SquadWheel.Gold : SquadWheel.Ink, 1.05f * s);
         }
-        SquadWheel.Centred(o, s_lit >= 0 ? Strings.Get(Entries[s_lit].Key) : Strings.Get("screens.title"), c.X, c.Y - 26 * s,
+        SquadWheel.Centred(o, s_lit >= 0 ? Strings.Get(s_entries[s_lit].Key) : Strings.Get("screens.title"), c.X, c.Y - 26 * s,
             s_lit >= 0 ? SquadWheel.Gold : SquadWheel.Faint, 1.3f * s);
         SquadWheel.Centred(o, Strings.Get("screens.hint"), c.X, c.Y + 8 * s, SquadWheel.Faint, 0.85f * s);
         o.Flush(w, h);

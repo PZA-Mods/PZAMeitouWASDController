@@ -331,7 +331,7 @@ public static class SquadWheel
         Centred(o, Strings.Get(s_paceOn ? "wheel.pace_on" : "wheel.pace_off"), bottom.X, bottom.Y + 12 * s, Faint, 0.85f * s);
         string name = s_lit == Everyone ? Strings.Get("wheel.everyone")
             : s_lit == SquadPace ? Strings.Get(s_paceOn ? "wheel.pace_turn_off" : "wheel.pace_turn_on")
-            : s_lit == FollowMe ? Strings.Get("wheel.follow_name")
+            : s_lit == FollowMe ? Strings.Get(Driver.ControlledId is { } who && Driver.FollowingNow(who) ? "wheel.unfollow_name" : "wheel.follow_name")
             : s_lit >= 0 && s_lit < s_names.Length ? s_names[s_lit] : "";
         Centred(o, name, c.X, c.Y - 30 * s, Gold, 1.35f * s);
         if (pages > 1) Centred(o, Strings.Format("wheel.page", s_page + 1, pages), c.X, c.Y + 4 * s, Faint, 0.95f * s);
