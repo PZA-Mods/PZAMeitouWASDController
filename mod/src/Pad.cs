@@ -52,10 +52,14 @@ public static class Pad
     /// <summary>The buttons that went up this reading (edges), as bits of PadButton.</summary>
     public static uint Released { get; private set; }
 
+    /// <summary>The last reading (Read).</summary>
+    public static PadState Last { get; private set; } = PadState.None;
+
     /// <summary>The pad now, once it has proved itself (PadGate), or None; also updates <see cref="Pressed"/>.</summary>
     public static PadState Read()
     {
         var state = ReadRaw();
+        Last = state;
         Pressed = state.Buttons & ~s_previous;
         Released = s_previous & ~state.Buttons;
         s_previous = state.Buttons;

@@ -36,6 +36,8 @@ public static class Driver
     static CharacterId? s_controlled;
     /// <summary>The left stick's push (0..1) while it steers this control tick, else 0.</summary>
     static float s_stickPush;
+    /// <summary>The left stick steered last (not the keys).</summary>
+    static bool s_padSteering;
     /// <summary>The character WASD Control drives (the first selected), or null.</summary>
     public static CharacterId? ControlledId => s_controlled;
 
@@ -58,6 +60,7 @@ public static class Driver
         s_intent = Vector2.Zero;
         s_padTiltRate = 0;   // set again by the pad's tick when it tilts a view
         s_stickPush = 0;     // set again when the left stick steers
+        if (input.IsDown(Key.W) || input.IsDown(Key.A) || input.IsDown(Key.S) || input.IsDown(Key.D)) s_padSteering = false;   // the keys steer
         s_takePressed = false;
         bool editing = Player is not null && Access.UiEditing(Player);
         if (editing)
@@ -116,12 +119,13 @@ public static class Driver
         {
             s_intent = pad.Left;
             s_stickPush = Math.Min(1, pad.Left.Length());
+            s_padSteering = true;
             Counters.Add("pad.steer");
         }
 
         var rig = session.Camera.Strategy;
         float look = Keys.LookFactor;
-        bool menu = Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, not the view
+        bool menu = Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen || ScreenWheel.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, not the view
         if (!menu && pad.Right.X != 0) rig.Rotate(-pad.Right.X * PadYawRate * look * dt);
         if (!menu && pad.Right.Y != 0)
         {
@@ -138,6 +142,11 @@ public static class Driver
             case WheelResult.SquadPace: ToggleSquadPace(session); return;   // the dial's bottom slice
             case WheelResult.FollowMe: FollowMe(session); return;           // the dial's left slice
             case WheelResult.Open: return;   // RB held: the squad wheel has the pad (stick, D-pad / LB pages, B cancels)
+        }
+        switch (ScreenWheel.Pad(Player!, pad, a => PressGame(session, a)))
+        {
+            case WheelResult.Tap: PressGame(session, InputAction.PreviousCharacter); break;   // LB tapped: the previous member, as before
+            case WheelResult.Open: return;   // LB held: the screens dial has the pad
         }
         if (Menus.Pad(Player!, pad)) return;   // a menu is open: the pad picks in it (D-pad, interact, select)
 
@@ -169,12 +178,28 @@ public static class Driver
     /// Press and release are passed on as they happen, so holding works as with the mouse.</summary>
     static void PadClicks()
     {
+        // B (the right face button) closes a game window, as Esc does (play test 2026-11-17: "once I'm done with the trade pressing like, B or
+        // something intuitive doesn't close it out"): trade and loot close with the inventories, else the top window. Its release is the close's.
+        if (Pad.WasPressed(PadButton.East) && Look.WindowOpen(Player!))
+        {
+            Access.Escape(Player!);
+            s_eastClosed = true;
+            Counters.Add("pad.close_window");
+        }
         foreach (var (button, mouse) in PadMouse)
         {
-            if (Pad.WasPressed(button)) Click(mouse, true);
-            if (Pad.WasReleased(button)) Click(mouse, false);
+            bool closing = button == PadButton.East && s_eastClosed;
+            if (Pad.WasPressed(button) && !closing) Click(mouse, true);
+            if (Pad.WasReleased(button))
+            {
+                if (!closing) Click(mouse, false);
+                if (button == PadButton.East) s_eastClosed = false;
+            }
         }
     }
+
+    /// <summary>The B press closed a window: neither its press nor its release is a click.</summary>
+    static bool s_eastClosed;
 
     static readonly (PadButton Button, MouseButton Mouse)[] PadMouse =
         [(PadButton.South, MouseButton.Right), (PadButton.East, MouseButton.Left)];
@@ -187,7 +212,6 @@ public static class Driver
 
     static readonly (PadButton Button, InputAction Action)[] PadGameKeys =
     [
-        (PadButton.LeftBumper, InputAction.PreviousCharacter),
         (PadButton.LeftStick, InputAction.ToggleSneak),   // L3: the user's choice (2026-11-17)
     ];
 
@@ -224,7 +248,7 @@ public static class Driver
     /// <summary>ZL and ZR were pressed together: stop, given once until both are let go.</summary>
     static bool s_chord;
 
-    /// <summary>ZL (hold) highlight; ZL + ZR together stop; ZR alone is free (0.9.8).</summary>
+    /// <summary>ZL (hold) highlight; ZL + ZR together stop; ZR alone attacks the crosshair's target (CrosshairAttack).</summary>
     static void PadTriggers(PadState pad, WorldSession session)
     {
         bool zl = pad.Down(PadButton.LeftTrigger), zr = pad.Down(PadButton.RightTrigger);
@@ -236,8 +260,8 @@ public static class Driver
             s_chord = true;
             PressGame(session, InputAction.StopMovement);
         }
-        // ZR alone is free since 0.9.8 (user, 2026-11-17): the stick's push walks / jogs / runs and squad pace is on the squad dial.
-        if (Pad.WasPressed(PadButton.RightTrigger) && !zl) Counters.Add("pad.zr_free");
+        // ZR alone: attack what the crosshair is on (tap), the deliberate attack / stealth KO (hold) (CrosshairAttack, 0.9.11).
+        CrosshairAttack.Pad(Player!, pad, zl);
         if (!zl && !zr) s_chord = false;
     }
 
@@ -253,6 +277,8 @@ public static class Driver
         if (others.Length == 0) { Counters.Add("follow.alone"); return; }
 
         session.World.Commands.Enqueue(new global::Meitou.Simulation.FollowOrder(others, leader) { Tick = session.World.Tick });
+        // the leader says it (user, 2026-11-17: "should make the selected character say 'Follow me!' with a text bubble over their head")
+        session.World.Commands.Enqueue(new BarkCommand(leader, Strings.Get("bark.follow_me")) { Tick = session.World.Tick });
         Counters.Add("follow.me");
         Log.Line(Strings.Format("log.follow_me", others.Length));
     }
@@ -350,13 +376,32 @@ public static class Driver
 
     /// <summary>D-pad up / down zoom the rig; D-pad left / right and Menu set the control tick's own time actions (WorldSession.Tick reads
     /// them right after this: TimeSlower / TimeFaster / Pause).</summary>
+    /// <summary>Menu / + held this long opens the game menu (ms; 2 s felt too long, the user 2026-11-17).</summary>
+    public const long MenuHoldMs = 1000;
+    static long s_menuSince = -1;
+    static bool s_menuHeld;
+
     static void PadControlTick(global::Meitou.Game.Host.Cameras.StrategyCamera rig, ActionState state)
     {
         if (Pad.WasPressed(PadButton.DPadUp)) rig.Zoom(1);
         if (Pad.WasPressed(PadButton.DPadDown)) rig.Zoom(-1);
         if (Pad.WasPressed(PadButton.DPadLeft)) Press(state, InputAction.TimeSlower);
         if (Pad.WasPressed(PadButton.DPadRight)) Press(state, InputAction.TimeFaster);
-        if (Pad.WasPressed(PadButton.Menu)) Press(state, InputAction.Pause);
+        // Menu / +: a tap pauses (on its release); held MenuHoldMs it opens the game's Esc menu instead (the user, 2026-11-17: "if you HOLD
+        // the Pause button for like 2-3 seconds, it will bring up the Escape menu").
+        long now = Environment.TickCount64;
+        if (Pad.WasPressed(PadButton.Menu)) { s_menuSince = now; s_menuHeld = false; }
+        if (s_menuSince >= 0 && !s_menuHeld && Pad.Last.Down(PadButton.Menu) && now - s_menuSince >= MenuHoldMs)
+        {
+            s_menuHeld = true;
+            Access.Escape(Player!);   // the interface's own Esc: closes a window if one is open, else the game menu
+            Counters.Add("pad.menu_hold");
+        }
+        if (Pad.WasReleased(PadButton.Menu) && s_menuSince >= 0)
+        {
+            if (!s_menuHeld) Press(state, InputAction.Pause);
+            s_menuSince = -1;
+        }
     }
 
     static void Press(ActionState state, InputAction a)
@@ -468,7 +513,10 @@ public static class Driver
 
 
         if (Views.Current == View.First && s_intent == Vector2.Zero) Neck(session, lead);
-        StickSpeed.Tick(session, lead, s_stickPush);   // walk on a light push, the chosen speed on a full one
+        // The push straight from the pad's last reading (play test 2026-11-17: "basically going straight into running"; the push kept from the
+        // input step read 0 here, so the speed never changed). Only while the stick steers: W A S D keys keep the chosen speed.
+        float push = s_padSteering && Pad.Last.Connected ? Math.Min(1, Pad.Last.Left.Length()) : 0;
+        StickSpeed.Tick(session, lead, push);   // walk / jog / run by the stick's push
 
         if (s_intent == Vector2.Zero)
         {

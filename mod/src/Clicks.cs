@@ -108,6 +108,20 @@ public static class Clicks
         return false;
     }
 
+    /// <summary>The first person on the aim help's rings round <paramref name="p"/> (scaled with the screen), or null.</summary>
+    public static CharacterId? PersonNear(object player, Vector2 p)
+    {
+        var (_, h) = Access.UiSize(player);
+        float s = Math.Max(1, h / 1080f);
+        foreach (float r in AimRings)
+            for (int i = 0; i < 8; i++)
+            {
+                float a = i * MathF.PI / 4;
+                if (Access.CharacterAt(player, p + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r * s) is { } id) return id;
+            }
+        return null;
+    }
+
     /// <summary>
     /// The nearest point around the crosshair with something on it, and what it is: a person anywhere within the rings first, else an object
     /// only right by the crosshair. Play test 2026-11-17 (clip 16.35.51: right clicks at the crosshair "having trouble registering the target",

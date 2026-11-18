@@ -230,7 +230,7 @@ public static class SquadWheel
     // ---------------------------------------------------------------- the dial (GameLoop.DrawInterface postfix)
     static FieldInfo? s_loopOverlay, s_uiPainter;
     static MethodInfo? s_loadTexture;
-    static readonly Vector4 Back = new(0.07f, 0.06f, 0.05f, 0.80f), Hub = new(0.04f, 0.035f, 0.03f, 0.85f),
+    internal static readonly Vector4 Back = new(0.07f, 0.06f, 0.05f, 0.80f), Hub = new(0.04f, 0.035f, 0.03f, 0.85f),
         Rim = new(0.69f, 0.65f, 0.55f, 0.85f), Seam = new(0.69f, 0.65f, 0.55f, 0.30f),
         Gold = new(0.91f, 0.71f, 0.35f, 1f), GoldWash = new(0.91f, 0.71f, 0.35f, 0.32f),
         Ink = new(0.86f, 0.82f, 0.72f, 1f), Faint = new(0.69f, 0.65f, 0.55f, 0.9f), Dim = new(0.62f, 0.62f, 0.62f, 1f);
@@ -252,13 +252,14 @@ public static class SquadWheel
 
     static void DrawInterfacePostfix(object __instance, object[] __args)
     {
-        if (!s_open) return;
+        if (!s_open && !ScreenWheel.IsOpen) return;
         try
         {
             if (s_loopOverlay!.GetValue(__instance) is not DebugOverlay overlay || __args.Length == 0 || __args[0] is not { } size) return;
             var t = size.GetType();
             if (t.GetField("X")?.GetValue(size) is not int w || t.GetField("Y")?.GetValue(size) is not int hgt || w <= 0 || hgt <= 0) return;
-            Draw(overlay, w, hgt);
+            if (s_open) Draw(overlay, w, hgt);
+            else ScreenWheel.Draw(overlay, w, hgt);
             Counters.Add("wheel.drawn");
         }
         catch (Exception e)
@@ -358,7 +359,7 @@ public static class SquadWheel
         return width > 0 && height > 0;
     }
 
-    static void Ring(DebugOverlay o, Vector2 c, float r0, float r1, float a0, float a1, Vector4 colour)
+    internal static void Ring(DebugOverlay o, Vector2 c, float r0, float r1, float a0, float a1, Vector4 colour)
     {
         int n = Math.Max(4, (int)MathF.Ceiling((a1 - a0) / (MathF.Tau / 96)));
         for (int i = 0; i < n; i++)
@@ -370,7 +371,7 @@ public static class SquadWheel
         }
     }
 
-    static void Disc(DebugOverlay o, Vector2 c, float r, Vector4 colour)
+    internal static void Disc(DebugOverlay o, Vector2 c, float r, Vector4 colour)
     {
         const int n = 64;
         for (int i = 0; i < n; i++)
@@ -380,9 +381,9 @@ public static class SquadWheel
         }
     }
 
-    static void Circle(DebugOverlay o, Vector2 c, float r, float thick, Vector4 colour) => Arc(o, c, r, 0, MathF.Tau, thick, colour);
+    internal static void Circle(DebugOverlay o, Vector2 c, float r, float thick, Vector4 colour) => Arc(o, c, r, 0, MathF.Tau, thick, colour);
 
-    static void Arc(DebugOverlay o, Vector2 c, float r, float a0, float a1, float thick, Vector4 colour)
+    internal static void Arc(DebugOverlay o, Vector2 c, float r, float a0, float a1, float thick, Vector4 colour)
     {
         int n = Math.Max(4, (int)MathF.Ceiling((a1 - a0) / (MathF.Tau / 96)));
         for (int i = 0; i < n; i++)
@@ -392,7 +393,7 @@ public static class SquadWheel
         }
     }
 
-    static void Frame(DebugOverlay o, Vector2 p, float f, float thick, Vector4 colour)
+    internal static void Frame(DebugOverlay o, Vector2 p, float f, float thick, Vector4 colour)
     {
         float x0 = p.X - f / 2, y0 = p.Y - f / 2, x1 = p.X + f / 2, y1 = p.Y + f / 2;
         o.Line(x0, y0, x1, y0, thick, colour);
@@ -401,7 +402,7 @@ public static class SquadWheel
         o.Line(x0, y1, x0, y0, thick, colour);
     }
 
-    static void Centred(DebugOverlay o, string text, float x, float top, Vector4 colour, float scale)
+    internal static void Centred(DebugOverlay o, string text, float x, float top, Vector4 colour, float scale)
     {
         if (text.Length == 0) return;
         o.TextScaled(text, x - o.MeasureText(text, scale) / 2, top, colour, scale);

@@ -433,6 +433,51 @@ public static class Access
     /// <summary>Shows a line in Meitou's message panel (and its message log).</summary>
     public static void Notice(object player, string text) => s_notice.Invoke(player, [text, false, null]);
 
+    static MethodInfo? s_pickWhereAt, s_verbs;
+
+    /// <summary>
+    /// The character the ray at <paramref name="p"/> meets first, any character (WorldPicking.PickWhereAt, the right click's own character pick:
+    /// the drawn body, else a capsule; hidden ones not); null for none or when the member is missing.
+    /// </summary>
+    public static CharacterId? CharacterAt(object player, Vector2 p)
+    {
+        if (s_picking.GetValue(player) is not { } picking) return null;
+        s_pickWhereAt ??= AccessTools.Method(picking.GetType(), "PickWhereAt");
+        if (s_pickWhereAt is null) return null;
+        Func<CharacterSnapshot, bool> any = _ => true;
+        var hit = s_pickWhereAt.Invoke(picking, [p, any]);
+        return hit is System.Runtime.CompilerServices.ITuple t && t[0] is CharacterId id ? id : null;
+    }
+
+    /// <summary>
+    /// The right-click menu's verbs for <paramref name="target"/> with the selection as it is (ContextMenuWindow.Verbs: caption and the order it
+    /// gives), so an action through it is exactly the menu's. Empty when a member is missing.
+    /// </summary>
+    public static IReadOnlyList<(string Caption, Action Give)> Verbs(object player, CharacterSnapshot target)
+    {
+        if (s_contextWindow.GetValue(player) is not { } cm) return [];
+        s_verbs ??= AccessTools.Method(cm.GetType(), "Verbs", [typeof(CharacterSnapshot)]);
+        return s_verbs?.Invoke(cm, [target]) as List<(string Caption, Action Give)> ?? [];
+    }
+
+    static MethodInfo? s_escapeKey;
+
+    /// <summary>The interface's own Esc (PlayerInterface.EscapeKey): closes the trade or the loot with the inventories, else the top window.</summary>
+    public static void Escape(object player)
+    {
+        s_escapeKey ??= AccessTools.Method(PlayerInterface, "EscapeKey", Type.EmptyTypes);
+        s_escapeKey?.Invoke(player, null);
+    }
+
+    static PropertyInfo? s_openScreens;
+
+    /// <summary>The interface's open screens, bottom to top (PlayerInterface.OpenScreens: "inventory", "trader", "loot", ...); empty when missing.</summary>
+    public static IReadOnlyList<string> OpenScreens(object player)
+    {
+        s_openScreens ??= AccessTools.Property(PlayerInterface, "OpenScreens");
+        return s_openScreens?.GetValue(player) as IReadOnlyList<string> ?? [];
+    }
+
     /// <summary>Selects exactly this character (not additive), as a left click on it does.</summary>
     public static void SelectOnly(object player, CharacterId id) => s_select.Invoke(player, [new[] { id }, false, false]);
 

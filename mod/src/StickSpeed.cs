@@ -4,7 +4,8 @@
 // HUD's jog, capped at RunCap; free = full run; group = squad pace; CharacterSnapshot.RunSpeed), stepped by a RunSpeedCommand. While the
 // stick steers:
 // - a light push walks, a medium push jogs, a full push runs (thresholds with a margin either side, so the edge does not flicker);
-// - squad pace (set on the squad dial's bottom slice, or with X) is left alone: everyone keeps to the slowest;
+// - squad pace on (the squad dial's bottom slice, or X): the full push is squad pace (everyone at the slowest), lighter pushes walk / jog the
+//   steered character alone; letting go forms squad pace again for the whole squad (0.9.17);
 // - let go, the speed the character had before the stick took over is put back (or one the player set meanwhile, with X).
 // Only the controlled character is stepped (the command names it). W A S D on the keyboard are all-or-nothing and keep the chosen speed.
 // ZR no longer steps the speed: it is free (0.9.8).
@@ -39,8 +40,8 @@ public static class StickSpeed
         return raw;
     }
 
-    /// <summary>The mode a zone wants: walk, jog (SpeedMode.Run), run (SpeedMode.Free).</summary>
-    public static byte ModeOf(int zone) => zone switch { 0 => SpeedMode.Walk, 1 => SpeedMode.Run, _ => SpeedMode.Free };
+    /// <summary>The mode a zone wants: walk, jog (SpeedMode.Run), and for the full push <paramref name="top"/> (run = Free, or squad pace = Group).</summary>
+    public static byte ModeOf(int zone, byte top = SpeedMode.Free) => zone switch { 0 => SpeedMode.Walk, 1 => SpeedMode.Run, _ => top };
 
     /// <summary>The RunSpeedCommand step that turns <paramref name="from"/> into <paramref name="to"/> (modes wrap, SpeedMode.Count).</summary>
     public static int Step(byte from, byte to) => ((to - from) % SpeedMode.Count + SpeedMode.Count) % SpeedMode.Count;
@@ -76,14 +77,44 @@ public static class StickSpeed
             return;
         }
 
-        if (lead.RunSpeed == SpeedMode.Group || s_chosen == SpeedMode.Group) { s_sent ??= lead.RunSpeed; return; }   // squad pace: left alone
-
+        // Squad pace on (user, 2026-11-17: "Is there a way to handle that better"): the full push is squad pace itself, lighter pushes walk / jog.
+        byte top = s_chosen == SpeedMode.Group ? SpeedMode.Group : SpeedMode.Free;
+        int was = s_zone;
         s_zone = Zone(tilt, s_zone);
-        byte want = ModeOf(s_zone);
+        byte want = ModeOf(s_zone, top);
+        Trace(tilt, was, lead.RunSpeed);
         if (!settled || lead.RunSpeed == want) { s_sent ??= lead.RunSpeed; return; }
 
         Send(session, lead, want);
         Counters.Add(s_zone switch { 0 => "speed.walk", 1 => "speed.jog", _ => "speed.run" });
+    }
+
+    static long s_traceAt;
+
+    /// <summary>
+    /// Calibration trace (play test 2026-11-17: "the walk / jog / run is not calibrated correctly anymore"): the stick's push and the zone in
+    /// the log, at every zone change and twice a second while the stick steers, so the thresholds can be set from the player's own pushes.
+    /// </summary>
+    static void Trace(float tilt, int was, byte mode)
+    {
+        long now = Environment.TickCount64;
+        if (s_zone == was && now - s_traceAt < 500) return;
+
+        s_traceAt = now;
+        string zone = s_zone switch { 0 => "walk", 1 => "jog", _ => "run" };
+        Log.Line(FormattableString.Invariant($"WASD stick speed: push {tilt:0.00} -> {zone}{(s_zone != was ? " (changed)" : "")}; mode now {mode}; edges walk<{JogAt:0.00} jog<{RunAt:0.00} run"));
+    }
+
+    /// <summary>
+    /// Who a speed change names. Walk / jog / run: the steered character alone. Squad pace: the whole squad bar with the steered one first, so
+    /// Meitou forms one speed group again (Orders.cs, RunSpeedCommand: every one takes the first one's mode, the group keyed by the first one).
+    /// Changing the steered one alone takes it out of the squad's group; without this the restore would leave it in a group of one.
+    /// </summary>
+    public static IReadOnlyList<CharacterId> Targets(CharacterId lead, byte want, IReadOnlyList<CharacterId>? squad = null)
+    {
+        if (want != SpeedMode.Group) return [lead];
+        squad ??= Driver.Player is { } p ? [.. Access.SquadBarMembers(p).Select(c => c.Id)] : [];
+        return [lead, .. squad.Where(i => i != lead)];
     }
 
     static void Release(WorldSession session, CharacterSnapshot? lead)
@@ -105,7 +136,7 @@ public static class StickSpeed
         int step = Step(lead.RunSpeed, want);
         if (step == 0) return;
 
-        session.World.Commands.Enqueue(new RunSpeedCommand([lead.Id], step) { Tick = session.World.Tick });
+        session.World.Commands.Enqueue(new RunSpeedCommand(Targets(lead.Id, want), step) { Tick = session.World.Tick });
         s_sent = want;
         s_sentTick = session.World.Tick;
     }

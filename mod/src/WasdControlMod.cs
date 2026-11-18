@@ -27,7 +27,7 @@ public sealed class WasdControlMod : IMod
         context.AddDebugCommand(Strings.Get("debug.window"), _ => { WasdWindow.Window.Open(); return Strings.Get("debug.window"); });
         // the window and the tiny button: PZA's Meitou UI (compiled in)
         PZA.MeitouUi.PzaUi.Log = s => Log.Line(s);
-        PZA.MeitouUi.PzaUi.EachFrame = () => { WasdWindow.EachFrame(); SquadWheel.EachFrame(); };
+        PZA.MeitouUi.PzaUi.EachFrame = () => { WasdWindow.EachFrame(); SquadWheel.EachFrame(); ScreenWheel.EachFrame(); };
         WasdWindow.Setup();
         if (!PZA.MeitouUi.PzaUi.Install(context)) Log.Line(Strings.Get("log.ui_off"));
         Log.Line(Strings.Format("log.loaded", version));
@@ -48,6 +48,7 @@ public sealed class WasdControlMod : IMod
             foreach (var line in Patches.Apply(harmony)) Log.Line(Strings.Format("log.patch", line));
             Log.Line(Strings.Format("log.patch", Crosshair.Apply(harmony)));   // optional: without it the arrow stays
             Log.Line(Strings.Format("log.patch", SquadWheel.Apply(harmony)));   // optional: without it the dial is not drawn
+            Log.Line(Strings.Format("log.patch", PickThrough.Apply(harmony)));  // optional: your character can block the crosshair without it
             return true;
         }
         catch (Exception e)

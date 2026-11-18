@@ -14,6 +14,9 @@ namespace PZA.WASDControl.Meitou;
 /// <summary>Turn <see cref="Id"/> on the spot to face <see cref="Yaw"/> (Meitou's character yaw).</summary>
 public sealed record TurnCommand(CharacterId Id, float Yaw) : SimCommand;
 
+/// <summary>A speech bubble over <see cref="Speaker"/> (World.Bark: display only, nothing in the world changes), e.g. "Follow me!".</summary>
+public sealed record BarkCommand(CharacterId Speaker, string Text) : SimCommand;
+
 public sealed class NeckSystem : ITickSystem
 {
     /// <summary>How far the view may turn from the body before the body follows (90 degrees).</summary>
@@ -31,6 +34,7 @@ public sealed class NeckSystem : ITickSystem
         foreach (var c in commands)
         {
             if (c is TurnCommand turn) _turning[turn.Id] = turn.Yaw;
+            else if (c is BarkCommand bark && world.Characters.TryResolveNext(bark.Speaker, out _)) world.Bark(bark.Speaker, bark.Text);
         }
     }
 

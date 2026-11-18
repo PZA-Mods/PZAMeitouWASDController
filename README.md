@@ -1,66 +1,90 @@
-# PZA's WASD & Controller Support for Meitou (beta 0.9.10)
+# PZA's WASD & Controller Support for Meitou (beta 0.9.18)
 
 Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
 Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
 button) to switch it on and off; while it is off, Meitou plays as usual.
 
+**Steam Workshop:** https://steamcommunity.com/sharedfiles/filedetails/?id=3841676799
+
 **Download:** the mod zip and its source zip are on the [Releases page](https://github.com/PZA-Mods/PZAMeitouWASDController/releases). Building from source: [BUILD.md](BUILD.md).
 
-![PZA's WASD Control: the controller layout](media/controller-layout.png)
+![PZA's WASD & Controller Support: the controller layout](media/controller-layout.png)
 
-## Hotkeys
+## Keyboard and mouse
 
 | Key | What it does |
 |---|---|
 | **V** | WASD Control on / off |
-| **W A S D** (or the arrows) | Move the first selected character, relative to the camera; let go and they stop |
-| **Mouse** | Turns the camera (the crosshair stays in the middle); left / right click act on what is under it |
+| **W A S D** (or the arrows) | Move the first selected character, relative to the camera; let go and they stop. Stairs, walls and ledges are followed as with a right click |
 | **Z** | Over-the-shoulder view on / off |
-| **N** | First-person view on / off |
+| **N** | First-person view on / off (look all the way round; your character turns with you) |
+| **Mouse** | In a view: turns the camera; a small cross marks the middle, and left / right click act on what it is on (looking past your own character) |
 | **G** | Point at one of your characters and press G: control moves to them |
 | **Alt** (held) | Frees the mouse pointer |
-| **X** | Meitou's own run speed (walk, run, full, squad pace) |
+| **X** | Meitou's own run speed (walk, jog, run, squad pace) |
 | Q / E, middle mouse, wheel | Turn, tilt and zoom the camera as usual |
 
-Ctrl and P are left alone on purpose (Meitou's camera orbit and photo mode). Nothing fires while you type in a text box.
+Ctrl and P are left alone on purpose (Meitou's camera orbit and photo mode). Nothing fires while you type in a text box. Trade, inventory
+and loot windows free the pointer by themselves.
 
-**Game controller** (the picture above): left stick steers (a light push walks, medium jogs, full runs), right stick looks, the face buttons act and select, LB / RB
-switch squad members. Hold RB for the squad dial: aim at a face and let go to take control; its slices also give ALL (everyone), PACE (squad
-pace on / off) and FOLLOW (the rest of the squad follows you). RT / ZR is left free for other mods. The full layout is on the window's CONTROLLER tab. A Switch Pro controller works best
-when Meitou is started through Steam (as a non-Steam game), so Steam Input handles it.
+## Game controller
+
+- **Left stick:** move. A light push walks, a medium push jogs, a full push runs (with squad pace on, the full push keeps the squad together).
+- **Right stick:** look around, up and down too.
+- **A** (bottom button): interact. **Hold A** for the menu, aim with the stick, let go to pick.
+- **B** (right button): select / inspect; closes a trade, inventory or loot window.
+- **Y / X:** over-the-shoulder view / first-person view.
+- **LB / RB:** previous / next squad member.
+  - **Hold LB** for the **screens dial:** inventory, character, map, squads, tech, crafting, build, faction; aim and let go to open.
+  - **Hold RB** for the **squad dial:** your squad's faces in a circle; aim and let go to take control. Top: **everyone**. Bottom: **squad
+    pace** on / off. Left: **follow me** (your character calls "Follow me!" and the rest of the squad follows you). Big squads get pages
+    (D-pad or LB).
+- **RT / ZR:** attack what the crosshair is on (a hostile). **Hold**: a stealth knockout from behind when the game offers one, otherwise an
+  attack on anyone (with the game's usual consequences).
+- **LT / ZL (hold):** highlight; with A: loot / steal. **LT + RT together:** stop.
+- **L3:** sneak. **R3:** camera behind you; hold to look back.
+- **D-pad:** zoom (normal view), game speed. **Menu / +:** pause; hold for the game menu. **View / -:** on / off.
+
+The full layout is in the picture above and on the window's KEYS tab. A Switch Pro controller works best when Meitou is started through
+Steam (as a non-Steam game), so Steam Input handles it.
 
 ## The window
 Starts as a tiny **WASD ON / OFF** button (top right): click to switch, **+** opens the window, drag it, mouse wheel for its opacity. Tabs:
-CONTROL (on / off, camera view, look speed, invert, shoulder side), KEYS, CONTROLLER and HELP. Everything is kept, and is also on
-**Settings > Mods** under the mod's row.
+CONTROL (on / off, camera view, look speed, invert, shoulder side), KEYS (change the keys; the controller list) and HELP. Everything is also
+on **Settings > Mods** under the mod's row.
 
 ## Requires
 **Meitou 0.20.1 up to 0.21.x.** It refuses to load on other Meitou versions.
 
 ## Install
-- Unpack `PZAWASDControl.Meitou-0.9.10-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
+- **Workshop:** subscribe, then tick **PZAWASDControlMeitou** in Meitou's mod list.
+- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.9.18-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
   **PZAWASDControl** in Meitou's mod list.
 - No items or world data; load order doesn't matter. Safe to remove at any time.
 
 ## This is a beta
-Earlier builds were played a lot (walking, stairs, the run-speed key, the controller; "working great"). **This build (0.9.10: the new name in game; 0.9.9: walk /
-jog / run by the stick's push, squad pace and FOLLOW ME on the squad dial, right clicks in a view finding people first) passed its offline checks on Meitou
-0.20.1 and 0.21.0 but has not been played in game yet.**
+The basics (walking, stairs, the views, the controller) were played a lot. **This build (0.9.18) passed its offline checks on Meitou 0.20.1
+and 0.21.0; its newest parts are not played in game yet:** the screens dial (hold LB), the stick under squad pace and "Follow me!", ZR's
+attack, B closing windows, the crosshair looking past your own character, the game menu on a held Menu / +.
 
 Known limits:
-- It steers one character at a time (the first selected one); the rest of the squad follows Meitou's own orders, or you (FOLLOW on the dial).
-- Manual combat (attacking with a key) is not in yet.
+- The controller cannot move the mouse pointer, so trade, inventory, loot, job lists and building screens are worked with the mouse (B closes them).
+- A right click on your own squad member in a view usually opens nothing (Meitou has no action for them there).
+- The squad dial shows the squad bar's members, at most 30.
+- With Settings' Hardware mouse on there is no crosshair (the look still works).
+- It steers one character at a time (the first selected one); the rest follow Meitou's own orders, or you (follow me).
+- No manual combat (attack / block / dodge with keys); the controller gives the game's own attack orders.
 - Texts are in English only for now.
 
 ## Planned
-Ideas, no dates:
-- **Manual combat:** attack, block and dodge with keys or the pad.
-- Texts in Russian, Chinese and Japanese, as the other PZA mods.
+Ideas, no dates: jobs on the controller (remove one from a dial), a pointer for the controller in windows, actions for your own squad
+members in a view, mouse-wheel steps into the views, texts in Russian, Chinese and Japanese.
 
 ## Reporting a bug
 What happened, how to make it happen again, keyboard or which controller, your Meitou version and mod list, and Meitou's `log.txt` (in your
-Meitou folder) copied right after that session. Our lines start with `pza.wasdcontrol`. Post it in its thread on the Meitou Discord or in the Workshop page's Bug reports discussion.
+Meitou folder) copied right after that session. Our lines start with `pza.wasdcontrol`. Post it in its thread on the Meitou Discord or in the
+Workshop page's Bug reports discussion.
 
 ## Licence and source
-GNU GPL version 3 or later; the source is attached to the release (`-source.zip`). Made by **PZA**. Unofficial fan-made mod; not affiliated
-with Lo-Fi Games.
+GNU GPL version 3 or later; the source is attached to the release (`-source.zip`). Made by **PZA**. Inspired by Direct Control for Kenshi
+(smokefoolius); no code shared. Unofficial fan-made mod; not affiliated with Lo-Fi Games.

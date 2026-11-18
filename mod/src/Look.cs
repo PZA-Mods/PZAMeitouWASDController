@@ -30,12 +30,31 @@ public static class Look
         var session = Access.Session(player);
         if (session.Camera.IsFree || Access.ModalOpen(player) || Access.UiCapturesPointer(player) || Access.UiEditing(player)) return false;
         if (Access.ContextMenuOpen(player)) return false;
-        if (WasdWindow.FullOpen) return false;   // the window's buttons need the cursor   // a context menu's rows need the cursor
+        if (WasdWindow.FullOpen) return false;
+        if (WindowOpen(player)) return false;   // trade, inventory, loot, conversation...: the cursor is the window's   // the window's buttons need the cursor   // a context menu's rows need the cursor
 
         var input = session.Input;
         // Alt frees the cursor, but not the pad's ZL highlight (it holds Alt for the game; the crosshair stays).
         if (Driver.PadHighlight) return !input.IsHeld(Binding.Of(Key.RightAlt));
         return !input.IsHeld(Binding.Of(Key.LeftAlt)) && !input.IsHeld(Binding.Of(Key.RightAlt));
+    }
+
+    /// <summary>
+    /// The game's windows that are worked with the cursor (Meitou's screen ids). Play test 2026-11-17 ("tried to TRADE someone and like, you
+    /// can't move the cursor when engaged in that (inventories opening)"): only modal screens freed it, and trade, inventories and loot are not
+    /// modal. While any of these is open the mouse does not turn the view.
+    /// </summary>
+    public static readonly HashSet<string> CursorWindows =
+    [
+        "inventory", "bag", "loot", "loot-bag", "trader", "limbs", "overview", "prospect", "dialogue", "message", "menu", "build",
+        "tutorials", "editor", "stats", "file",
+    ];
+
+    /// <summary>One of <see cref="CursorWindows"/> is open.</summary>
+    public static bool WindowOpen(object player)
+    {
+        foreach (var s in Access.OpenScreens(player)) if (CursorWindows.Contains(s)) return true;
+        return false;
     }
 
     /// <summary>GameHost.MouseLook postfix: true while Wanted; an off -> on change asks for the pointer at the centre.</summary>
