@@ -30,6 +30,14 @@ public sealed class DcSettings
     public bool CameraFollows { get; set; } = true;
 
 
+    /// <summary>Time while a controller dial is open (DialTime): Slow through PZA's SlowMo (pauses without it), Pause, or Normal.</summary>
+    [Setting(Strings.En.DialTimeLabel, Hint = Strings.En.DialTimeHint, Options = ["Slow", "Pause", "Normal"])]
+    public string DialTime { get; set; } = "Slow";
+
+    /// <summary>The prompt strip at the top of the screen while the controller is in use (Prompts).</summary>
+    [Setting(Strings.En.PromptsLabel, Hint = Strings.En.PromptsHint)]
+    public bool ShowPrompts { get; set; } = true;
+
     /// <summary>The keys (the window's Keys tab changes them, refusing keys the game's own controls use). Letters only.</summary>
     public const string Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

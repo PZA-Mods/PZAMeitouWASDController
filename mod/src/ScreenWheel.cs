@@ -1,196 +1,87 @@
 // PZA's WASD & Controller Support (Meitou). Author: PZA. Licence: GPLv3 or later.
-// The screens dial (user, 2026-11-17: "we should probably have another radial menu (LB?) that opens up some other menus ie the SQD, TEC, MAP,
-// etc..."), controller only, drawn like the squad dial (SquadWheel's helpers, the same GameLoop.DrawInterface postfix):
+// The screens dial (user, 2026-11-17: "another radial menu (LB?) that opens up some other menus ie the SQD, TEC, MAP"), on the dial engine
+// since 0.10 (Dials.cs):
 // - LB tapped: the previous squad member, as before (the game's own PreviousCharacter key);
-// - LB held: a dial of the game's screens; the right stick points at one (it stays lit), letting go of LB opens it, B cancels.
-// Each screen opens the way its own HUD button or key does: inventory / character / help through the interface's own actions
-// (PlayerInterface.ExecuteUiAction "inventory" / "stats", as the I and C keys), map / faction / tech / crafting / squads as the overview's tabs
-// 0 / 1 / 2 / 3 / 4 (the HUD's MAP / TEC / SQD buttons), build with the game's Build key. A screen that is open closes, as its button does.
-using System.Numerics;
-using System.Reflection;
+// - LB held: the eight screens, always in the same place (0.10, user 2026-11-18: PUT DOWN and CLEAR JOBS moved to the Orders dial's Tasks
+//   page, so nothing here comes and goes): Map up, then clockwise Inventory, Character, Squads, Build, Crafting, Tech, Faction.
+// Each opens the way its own HUD button or key does: inventory / character through PlayerInterface.ExecuteUiAction "inventory" / "stats" (the
+// I / C keys' call), map / faction / tech / crafting / squads as the overview's tabs 0 / 1 / 2 / 3 / 4, build with the game's Build key. A
+// screen that is open closes, as its button does. Every pick is checked (the screen's open state changed, or the tab is showing).
 using HarmonyLib;
 using Meitou.Game.Host.Input;
-using Meitou.Game.Rendering.Overlays;
 
 namespace PZA.WASDControl.Meitou;
 
 public static class ScreenWheel
 {
-    /// <summary>A slice: its caption key (Strings), and how it opens: an interface action, an overview tab, or a game key.</summary>
+    /// <summary>A screen: its caption key, and how it opens: an interface action, an overview tab, or a game key.</summary>
     public sealed record Entry(string Key, string? UiAction = null, int Tab = -1, InputAction? Action = null);
 
-    /// <summary>The slices, clockwise from the top.</summary>
+    /// <summary>The eight screens, clockwise from the top (fixed: rule 2 of the dial plan).</summary>
     public static readonly Entry[] Entries =
     [
-        // ExecuteUiAction takes "inventory" / "stats" (the I / C keys' own call); "meitou:..." is only the HUD buttons' widget action, which
-        // ExecuteUiAction does not know (0.9.21 opened nothing for these two).
+        new("screen.map", Tab: 0),
+        // ExecuteUiAction takes "inventory" / "stats" (the I / C keys' own call); "meitou:..." is only the HUD buttons' widget action (0.9.22).
         new("screen.inventory", UiAction: "inventory"),
         new("screen.character", UiAction: "stats"),
-        new("screen.map", Tab: 0),
         new("screen.squads", Tab: 4),
-        new("screen.tech", Tab: 2),
-        new("screen.crafting", Tab: 3),
         new("screen.build", Action: InputAction.ToggleBuild),
+        new("screen.crafting", Tab: 3),
+        new("screen.tech", Tab: 2),
         new("screen.faction", Tab: 1),
     ];
 
-    /// <summary>While carrying someone (CharacterSnapshot.Carrying) the dial gains PUT DOWN, the game's own Put Down key (K) (user, 2026-11-17).</summary>
-    public static readonly Entry PutDown = new("screen.put_down", Action: InputAction.PutDown);
+    public static readonly Dial Dial = new("screens", [PadButton.LeftBumper], "screens.title", [[.. Entries.Select(Make)]]);
 
-    /// <summary>
-    /// While the controlled character has jobs (CharacterSnapshot.Jobs) the dial gains CLEAR JOBS (user, 2026-11-17: "I can't cancel all the jobs
-    /// the selected character has can i?"): Meitou only takes one off at a time, with the X on its row of the jobs list (OrdersPanel.RemoveJob,
-    /// a RemoveJob command). This sends that same command for every job, last first so the indexes stay right; the job being worked ends as the X
-    /// ends it.
-    /// </summary>
-    public static readonly Entry ClearJobs = new("screen.clear_jobs");
+    public static bool IsOpen => Dial.IsOpen;
 
-    /// <summary>The slices this time: the screens, plus PUT DOWN while the controlled character carries someone (first, at the top) and CLEAR
-    /// JOBS while they have jobs (last, just left of the top).</summary>
-    public static Entry[] For(bool carrying, bool hasJobs = false) =>
-        [.. carrying ? [PutDown] : Array.Empty<Entry>(), .. Entries, .. hasJobs ? [ClearJobs] : Array.Empty<Entry>()];
+    static Slice Make(Entry e) => new(e.Key, p => Open(p, e), Expect: p => ExpectFor(p, e), World: e.Action is not null);
 
-    /// <summary>The RemoveJob commands that clear a list of <paramref name="count"/> jobs: the last index first.</summary>
-    public static IEnumerable<global::Meitou.Simulation.Production.RemoveJob> ClearCommands(global::Meitou.Simulation.CharacterId who, int count, long tick)
-    {
-        for (int i = count - 1; i >= 0; i--) yield return new(who, i) { Tick = tick };
-    }
+    /// <summary>The pad's LB this tick (Tap: the caller presses PreviousCharacter).</summary>
+    public static WheelResult Pad(object player, PadState pad) => Dial.Pad(player, pad);
 
-    static Entry[] s_entries = Entries;
-    static long s_since = -1;
-    static bool s_open;
-    static int s_lit = -1;
-
-    public static bool IsOpen => s_open;
-
-    /// <summary>The pad's LB this tick. Tap: the caller presses PreviousCharacter. Open: the dial has the pad.</summary>
-    public static WheelResult Pad(object player, PadState pad, Action<InputAction> pressGame)
-    {
-        long now = Environment.TickCount64;
-        if (global::PZA.WASDControl.Meitou.Pad.WasPressed(PadButton.LeftBumper)) s_since = now;
-        bool released = global::PZA.WASDControl.Meitou.Pad.WasReleased(PadButton.LeftBumper);
-
-        if (!s_open)
-        {
-            if (s_since < 0) return WheelResult.None;
-            if (released) { s_since = -1; Counters.Add("screens.tap"); return WheelResult.Tap; }
-            if (!pad.Down(PadButton.LeftBumper)) { s_since = -1; return WheelResult.None; }
-            if (now - s_since < SquadWheel.HoldMs) return WheelResult.None;
-            s_open = true;
-            s_lit = -1;
-            var me = Me(player);
-            s_entries = For(me is not null && !me.Carrying.IsNone, me is not null && me.Jobs.Count > 0);
-            Counters.Add("screens.open");
-        }
-
-        int slot = SquadWheel.SlotAt(pad.Right, s_entries.Length);
-        if (slot >= 0 && slot != s_lit) { s_lit = slot; Counters.Add("screens.aim"); }
-
-        if (global::PZA.WASDControl.Meitou.Pad.WasPressed(PadButton.East))
-        {
-            Close("screens.cancel");
-            return WheelResult.Open;
-        }
-        if (!released && pad.Down(PadButton.LeftBumper)) return WheelResult.Open;
-
-        int lit = s_lit;
-        Close(null);
-        if (lit >= 0) Open(player, s_entries[lit], pressGame);
-        else Counters.Add("screens.released_empty");
-        return WheelResult.Open;
-    }
-
-    /// <summary>The controlled character now (null without one).</summary>
-    static global::Meitou.Simulation.CharacterSnapshot? Me(object player) =>
-        Driver.ControlledId is { } id ? Access.Session(player).CurrentSnapshot.Characters.FirstOrDefault(c => c.Id == id) : null;
-
-    static void Close(string? why)
-    {
-        s_open = false;
-        s_lit = -1;
-        s_since = -1;
-        if (why is not null) Counters.Add(why);
-    }
-
-    /// <summary>Once a frame: shut when WASD Control is off.</summary>
-    public static void EachFrame()
-    {
-        if (s_open && !Driver.On) Close("screens.closed_off");
-    }
+    public static void EachFrame() => Dial.EachFrame();
 
     // ---------------------------------------------------------------- opening a screen, as its HUD button does
-    static MethodInfo? s_execute, s_updatePause;
+    static System.Reflection.MethodInfo? s_updatePause;
 
-    static void Open(object player, Entry e, Action<InputAction> pressGame)
+    static void Open(object player, Entry e)
     {
-        try
+        if (e.UiAction is { } ui) Access.UiAction(player, ui);
+        else if (e.Tab >= 0)
         {
-            if (ReferenceEquals(e, ClearJobs))
+            var host = PZA.MeitouUi.Access.FaithfulScreens(player);
+            if (OverviewOn(player, e.Tab)) host.Close("overview");
+            else
             {
-                if (Me(player) is not { } me) return;
-                var world = Access.Session(player).World;
-                int n = 0;
-                foreach (var c in ClearCommands(me.Id, me.Jobs.Count, world.Tick)) { world.Commands.Enqueue(c); n++; }
-                for (int k = 0; k < n; k++) Counters.Add("screens.job_removed");
-                Log.Line(Strings.Format("log.jobs_cleared", n));
+                host.Open("overview");
+                host.SetTab("overview", "TabsMain", e.Tab);
             }
-            else if (e.UiAction is { } ui)
-            {
-                s_execute ??= AccessTools.Method(Access.PlayerInterface, "ExecuteUiAction", [typeof(string), typeof(string)]);
-                s_execute?.Invoke(player, [ui, ""]);
-            }
-            else if (e.Tab >= 0)
-            {
-                var host = PZA.MeitouUi.Access.FaithfulScreens(player);
-                if (host.IsOpen("overview") && host.GetTab("overview", "TabsMain") == e.Tab) host.Close("overview");
-                else
-                {
-                    host.Open("overview");
-                    host.SetTab("overview", "TabsMain", e.Tab);
-                }
-                s_updatePause ??= AccessTools.Method(Access.PlayerInterface, "UpdateMenuPause");
-                s_updatePause?.Invoke(player, null);
-            }
-            else if (e.Action is { } a) pressGame(a);
-            Counters.Add("screens." + e.Key);
+            s_updatePause ??= AccessTools.Method(Access.PlayerInterface, "UpdateMenuPause");
+            s_updatePause?.Invoke(player, null);
         }
-        catch (Exception ex)
-        {
-            Log.Exception("screens dial", ex);
-        }
+        else if (e.Action is { } a) Driver.Press(a);
     }
 
-    // ---------------------------------------------------------------- the dial
-    internal static void Draw(DebugOverlay o, int w, int h)
+    static bool OverviewOn(object player, int tab)
     {
-        int slots = s_entries.Length;
-        var c = new Vector2(w / 2f, h / 2f);
-        float s = h / 1080f, radius = 230 * s, inner = radius - 70 * s, outer = radius + 70 * s, step = MathF.Tau / slots;
+        var host = PZA.MeitouUi.Access.FaithfulScreens(player);
+        return host.IsOpen("overview") && host.GetTab("overview", "TabsMain") == tab;
+    }
 
-        o.Flush(w, h);
-        SquadWheel.Ring(o, c, inner, outer, 0, MathF.Tau, SquadWheel.Back);
-        SquadWheel.Disc(o, c, inner, SquadWheel.Hub);
-        if (s_lit >= 0) SquadWheel.Ring(o, c, inner, outer, s_lit * step - step / 2, s_lit * step + step / 2, SquadWheel.GoldWash);
-        for (int i = 0; i < slots; i++)
+    /// <summary>What a pick must change: a tab is showing (or gone, if it was), a window's open state flipped; the build key is unchecked.</summary>
+    static Func<object, bool>? ExpectFor(object player, Entry e)
+    {
+        if (e.Tab >= 0)
         {
-            float a = i * step + step / 2;
-            var d = new Vector2(MathF.Sin(a), -MathF.Cos(a));
-            o.Line(c.X + d.X * inner, c.Y + d.Y * inner, c.X + d.X * outer, c.Y + d.Y * outer, Math.Max(1, s), SquadWheel.Seam);
+            bool was = OverviewOn(player, e.Tab);
+            return p => OverviewOn(p, e.Tab) != was;
         }
-        SquadWheel.Circle(o, c, inner, Math.Max(1, 1.5f * s), SquadWheel.Rim);
-        SquadWheel.Circle(o, c, outer, Math.Max(1, 2f * s), SquadWheel.Rim);
-        if (s_lit >= 0) SquadWheel.Arc(o, c, outer, s_lit * step - step / 2, s_lit * step + step / 2, 4 * s, SquadWheel.Gold);
-        o.Flush(w, h);
-
-        for (int i = 0; i < slots; i++)
+        if (e.UiAction is { } ui)
         {
-            var p = SquadWheel.SlotCentre(c, i, slots, radius);
-            SquadWheel.Centred(o, Strings.Get(s_entries[i].Key), p.X, p.Y - 9 * s, i == s_lit ? SquadWheel.Gold : SquadWheel.Ink, 1.05f * s);
+            bool was = Access.OpenScreens(player).Contains(ui);
+            return p => Access.OpenScreens(p).Contains(ui) != was;
         }
-        SquadWheel.Centred(o, s_lit >= 0 ? Strings.Get(s_entries[s_lit].Key) : Strings.Get("screens.title"), c.X, c.Y - 26 * s,
-            s_lit >= 0 ? SquadWheel.Gold : SquadWheel.Faint, 1.3f * s);
-        SquadWheel.Centred(o, Strings.Get("screens.hint"), c.X, c.Y + 8 * s, SquadWheel.Faint, 0.85f * s);
-        SquadWheel.Centred(o, Strings.Get("dial.cancel"), c.X, c.Y + 30 * s, SquadWheel.Faint, 0.85f * s);
-        o.Flush(w, h);
+        return null;
     }
 }

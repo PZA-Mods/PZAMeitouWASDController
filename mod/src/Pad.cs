@@ -56,9 +56,11 @@ public static class Pad
     public static PadState Last { get; private set; } = PadState.None;
 
     /// <summary>The pad now, once it has proved itself (PadGate), or None; also updates <see cref="Pressed"/>.</summary>
-    public static PadState Read()
+    public static PadState Read() => Feed(ReadRaw());
+
+    /// <summary>Takes one reading as if it came from the pad: edges against the previous one (Read; the fuzzer feeds made-up readings).</summary>
+    internal static PadState Feed(PadState state)
     {
-        var state = ReadRaw();
         Last = state;
         Pressed = state.Buttons & ~s_previous;
         Released = s_previous & ~state.Buttons;

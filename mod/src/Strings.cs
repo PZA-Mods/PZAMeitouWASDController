@@ -43,6 +43,10 @@ public static class Strings
         public const string StopHint = "Letting go of W A S D stops the character at once.";
         public const string FollowLabel = "Camera follows";
         public const string FollowHint = "The camera stays on the character you steer while WASD & Controller is on.";
+        public const string PromptsLabel = "Controller prompts";
+        public const string PromptsHint = "A line at the top of the screen with what the controller's buttons do right now. Shows while you use the controller.";
+        public const string DialTimeLabel = "Time under a dial";
+        public const string DialTimeHint = "Controller dials: Slow runs time at a quarter through PZA's SlowMo (it pauses when SlowMo isn't installed); Pause stops time; Normal leaves it running. Your own pause or speed change always wins.";
     }
 
     static readonly Dictionary<string, string> EnTable = new(StringComparer.Ordinal)
@@ -55,6 +59,24 @@ public static class Strings
         ["setting.stop.hint"] = En.StopHint,
         ["setting.follow.label"] = En.FollowLabel,
         ["setting.follow.hint"] = En.FollowHint,
+        ["setting.prompts.label"] = En.PromptsLabel,
+        ["setting.prompts.hint"] = En.PromptsHint,
+        ["prompt.sep"] = "   ·   ",
+        ["prompt.a_verb"] = "A: {0}",
+        ["prompt.a_hold"] = "Hold LB + RB: orders",
+        ["prompt.rt"] = "RT: interact (hold: menu)",
+        ["prompt.lt"] = "LT: highlight",
+        ["prompt.lb"] = "Hold LB: screens",
+        ["prompt.rb"] = "Hold RB: squad",
+        ["prompt.views"] = "Y / X: views",
+        ["prompt.win_a"] = "A: click",
+        ["prompt.win_b"] = "B: close",
+        ["prompt.win_stick"] = "Right stick: pointer",
+        ["prompt.menu_choose"] = "D-pad / right stick: choose",
+        ["prompt.menu_pick"] = "Let go of RT: pick",
+        ["prompt.menu_close"] = "B: close",
+        ["setting.dialtime.label"] = En.DialTimeLabel,
+        ["setting.dialtime.hint"] = En.DialTimeHint,
         ["debug.toggle"] = "WASD & Controller: on / off (V)",
         ["log.loaded"] = "PZA's WASD & Controller Support {0} loaded: V turns it on and off; W A S D steer the first selected character, G takes control of your character under the pointer, Z over-the-shoulder view, N first person.",
         ["log.missing"] = "PZA's WASD & Controller Support stays OFF: the game lacks {0} (built for Meitou 0.20.1).",
@@ -100,6 +122,9 @@ public static class Strings
         ["win.side"] = "Over-the-shoulder camera: which shoulder",
         ["win.left"] = "Left",
         ["win.right"] = "Right",
+        ["win.dial_time"] = "Time while a controller dial is open",
+        ["win.dial_slow"] = "Slow",
+        ["win.dial_pause"] = "Pause",
         ["keys.intro"] = "Click a key, then press a letter. Keys the game already uses are refused. Esc gives up.",
         ["keys.tip"] = "Click, then press the new letter",
         ["keys.press"] = "Press a letter (Esc gives up)...",
@@ -118,18 +143,19 @@ public static class Strings
         ["help.1"] = "WASD & Controller steers the first selected character with W A S D, relative to the camera, and the camera follows them. Let go and they stop. Stairs, walls and ledges are followed as when you right-click.",
         ["help.2"] = "Views: over the shoulder and first person. In a view the mouse looks around, the cursor in the middle is your crosshair: right-click a person for their menu, an object for its action; left-click one of your people to see their info. Hold Alt for a free cursor. Bare ground does nothing: walk with W A S D. While you carry someone the views move out of the way: over the shoulder looks from higher and further back, first person from a little further forward.",
         ["help.3"] = "Controller: any pad Windows or Steam knows. A Switch Pro controller needs Meitou started through Steam (Steam Input). A pad that presses buttons by itself is ignored, with a line in the log.",
-        ["help.4"] = "Controller dials: hold RB for the squad dial, LB for the screens dial. Aim with the right stick, let go of the bumper to pick; B cancels, and letting go without aiming does nothing. After a dial, menu or window closes, the right stick looks around again once it is back in the middle.",
+        ["help.4"] = "Controller dials: hold RB for the squad dial, LB for the screens dial, LB and RB together for the orders dial (Stances: Kenshi's eight orders, lit when on; Tasks: stop, medic, rescue, prospect, put down, clear jobs, rest, select all; the D-pad left / right turns its page). Aim with the right stick, let go to pick; B cancels, and letting go without aiming does nothing. A slice that doesn't apply now is dimmed and stays in its place. If a pick changes nothing in the game, a note says so. While a dial is open time runs at a quarter through PZA's SlowMo (or pauses without it); the main tab's \"Time while a controller dial is open\" picks Slow, Pause or Normal. Your own pause or speed change always wins. While you use the controller, a line at the top of the screen says what its buttons do right now (setting Controller prompts). Tap A on a person, a door or one of your containers: the safe extra option named under the crosshair (talk, trade, first aid, pick up, loot; open, close, lock a door; your own chest's inventory), never an attack, a lockpick or a theft: those stay on hold RT.",
         ["help.5"] = "The Keys tab changes the mod's keys. X is Meitou's own run speed, Numpad 4 its sneak. PZA's WASD & Controller Support is by PZA, inspired by Direct Control for Kenshi (smokefoolius).",
         ["pad.1"] = "Left stick: move (relative to the camera); light push walk, medium jog, full run",
         ["pad.2"] = "Left stick click (L3): sneak on / off",
         ["pad.3"] = "Right stick: look around / turn the camera",
         ["pad.4"] = "Right stick click (R3): camera behind you; hold to look back",
-        ["pad.5"] = "Bottom button (Xbox A, Switch B): in a window (trade, inventory, loot, map and the other screens): click, the right stick moves the pointer; picks in a menu; otherwise free",
+        ["pad.5"] = "Bottom button (Xbox A, Switch B): in a window: click (the right stick moves the pointer); picks in a menu; in the world: the safe option named under the crosshair",
         ["pad.6"] = "Right button (Xbox B, Switch A): select / inspect; closes a window; cancels a dial",
         ["pad.7"] = "Top button (Xbox Y, Switch X): over-the-shoulder view",
         ["pad.8"] = "Left button (Xbox X, Switch Y): first-person view",
-        ["pad.9"] = "LB / L: tap previous squad member; hold for the screens dial (inventory, character, map, squads, tech, crafting, build, faction; PUT DOWN while carrying, CLEAR JOBS while the character has jobs; right stick aims, let go to open, B cancels)",
+        ["pad.9"] = "LB / L: tap previous squad member; hold for the screens dial (map, inventory, character, squads, build, crafting, tech, faction; right stick aims, let go to open, B cancels)",
         ["pad.10"] = "RB / R: tap next squad member; hold for the squad wheel (right stick aims, let go to take control; top: everyone; bottom: squad pace; left: follow me; B cancels)",
+        ["pad.19"] = "LB + RB together (L + R): hold for the orders dial (stances lit when on; D-pad left / right: the tasks page; right stick aims, let go to pick, B cancels)",
         ["pad.11"] = "LT / ZL (hold): highlight; with RT / ZR: loot / steal; with the right button: stop",
         ["pad.12"] = "RT / ZR: interact (a right click: attacks a hostile, talks to a friend, loots); hold for the menu, aim, let go to pick",
         ["pad.13"] = "LT + right button / ZL + A (Switch): stop",
@@ -157,6 +183,43 @@ public static class Strings
         ["screens.title"] = "SCREENS",
         ["screens.hint"] = "Aim, let go of LB",
         ["dial.cancel"] = "B: cancel",
+        ["dial.cancel_pages"] = "B: cancel · LB / RB: page",
+        ["dial.cancel_pages_dpad"] = "B: cancel · D-pad ◀ ▶: page",
+        ["dial.hint"] = "Aim, let go of {0}",
+        ["dial.on"] = "on",
+        ["dial.off"] = "off",
+        ["dial.sub_turn_on"] = "turn on",
+        ["dial.sub_turn_off"] = "turn off",
+        ["dial.sub_not_now"] = "not now",
+        ["dial.not_now"] = "{0}: not now.",
+        ["dial.failed"] = "{0} didn't take.",
+        ["log.dial_failed"] = "WASD Control: dial pick {0} changed nothing in the game (dial.<slice>.failed).",
+        ["pad.name.LeftBumper"] = "LB",
+        ["pad.name.RightBumper"] = "RB",
+        ["pad.name.South"] = "A",
+        ["orders.title"] = "ORDERS",
+        ["orders.stances"] = "STANCES",
+        ["orders.tasks"] = "TASKS",
+        ["stance.hold"] = "HOLD",
+        ["stance.block"] = "BLOCK",
+        ["stance.passive"] = "PASSIVE",
+        ["stance.ranged"] = "RANGED",
+        ["stance.jobs"] = "JOBS",
+        ["stance.taunt"] = "TAUNT",
+        ["stance.sneak"] = "SNEAK",
+        ["stance.chase"] = "CHASE",
+        ["task.stop"] = "STOP",
+        ["task.medic"] = "MEDIC",
+        ["task.rescue"] = "RESCUE",
+        ["task.prospect"] = "PROSPECT",
+        ["task.rest"] = "REST",
+        ["task.select_all"] = "SELECT ALL",
+        ["target.line"] = "{0}: A {1} · hold RT: menu",
+        ["target.door"] = "Door",
+        ["target.container"] = "Container (not yours)",
+        ["target.our_container"] = "Your container",
+        ["target.menu_only"] = "{0}: hold RT: menu",
+        ["extra.none"] = "{0}: nothing safe for A; hold RT for the menu.",
         ["wheel.follow"] = "FOLLOW ME",
         ["wheel.follow_sub"] = "the rest",
         ["wheel.follow_name"] = "Everyone follows you",
@@ -177,6 +240,9 @@ public static class Strings
 
     /// <summary>The string for a key (English for now; the key itself when missing, so a gap shows).</summary>
     public static bool Has(string key) => EnTable.ContainsKey(key);
+
+    /// <summary>Every key (the fuzzer checks each string's placeholders).</summary>
+    internal static IEnumerable<string> Keys => EnTable.Keys;
 
     public static string Get(string key) => EnTable.TryGetValue(key, out var s) ? s : key;
 

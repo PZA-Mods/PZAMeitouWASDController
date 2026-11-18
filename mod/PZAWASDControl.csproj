@@ -16,7 +16,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Version>0.9.24</Version>
+    <Version>0.10.0</Version>
     
     <Authors>PZA</Authors>
     <Company>PZA</Company>
@@ -32,6 +32,10 @@
        <Project><PropertyGroup><MeitouDir>C:\path\to\Meitou-0.20.1-win-x64</MeitouDir></PropertyGroup></Project> -->
   <Import Project="$(MSBuildThisFileDirectory)local.props" Condition="'$(MeitouDir)' == '' And Exists('$(MSBuildThisFileDirectory)local.props')" />
 
+  <!-- The offline check / fuzzer (tools\check, assembly "check", never shipped) reaches the test seams (Pad.Feed, Dial.Clock...). -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="check" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="MeitouClient"><HintPath>$(MeitouDir)\MeitouClient.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Meitou.Simulation"><HintPath>$(MeitouDir)\Meitou.Simulation.dll</HintPath><Private>false</Private></Reference>

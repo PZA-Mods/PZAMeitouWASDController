@@ -76,6 +76,7 @@ public static class Driver
         if (Player is not null && Keys.Capture(input, Access.Session(Player).Bindings)) return;   // the window's Keys tab waits for a key
         if (plain && input.WasPressed(Keys.Of(KeyAction.Toggle))) Toggle(Keys.Of(KeyAction.Toggle).ToString());
         var pad = Player is null ? PadState.None : Pad.Read();
+        Prompts.Note(pad);
         if (pad.Connected && Pad.WasPressed(PadButton.View)) Toggle("pad");
         if (PadHighlight && (!pad.Connected || !On)) SetHighlight(Player is null ? null : Access.Session(Player), false);
         if (!On) return;
@@ -127,7 +128,7 @@ public static class Driver
         float look = Keys.LookFactor;
         bool window = Look.WindowOpen(Player!);   // trade, inventory, loot...: the right stick moves the pointer (PadPointer)
         PadPointer.Stick(window ? pad.Right : Vector2.Zero);
-        bool menuNow = window || Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen || ScreenWheel.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, moves the pointer in a window, not the view
+        bool menuNow = window || Access.ContextMenuOpen(Player!) || SquadWheel.IsOpen || ScreenWheel.IsOpen || OrdersDial.IsOpen;   // the right stick picks rows in a menu / faces on the wheel, moves the pointer in a window, not the view
         // Play test clip 2026-11-17 20:17: the push that aimed at a face on the squad dial went on into the look once the dial closed (the view
         // tilted to the ground). After any dial, menu or window closes the right stick looks again only once it has come back to the centre.
         bool menu = !LookAfterMenu(ref s_menuWasOpen, ref s_waitStickCentre, menuNow, pad.Right.Length());
@@ -140,7 +141,18 @@ public static class Driver
         }
         if (pad.Right != Vector2.Zero) Counters.Add("pad.look");
 
+        SafeExtra.Refresh(Player!);   // the target line under the crosshair (0.10)
         PadR3(session);   // before the menu's early return, so a release is never lost and a look back never sticks
+        // LB + RB together (0.10): the Orders dial; while the chord is on, neither bumper's own tap or dial happens.
+        bool mayDial = !window && !Access.ContextMenuOpen(Player!);
+        if (OrdersDial.Chord.Step(Dial.Clock(), pad.Down(PadButton.LeftBumper), pad.Down(PadButton.RightBumper), Pad.WasPressed(PadButton.LeftBumper),
+                Pad.WasPressed(PadButton.RightBumper), mayDial && !SquadWheel.IsOpen && !ScreenWheel.IsOpen))
+        {
+            SquadWheel.Abort();
+            ScreenWheel.Dial.Abort();
+            OrdersDial.Pad(Player!, pad, mayDial);
+            return;   // the chord has the pad (the dial, or the bumpers still held after a pick)
+        }
         switch (SquadWheel.Pad(Player!, pad, s_controlled))
         {
             case WheelResult.Tap: PressGame(session, InputAction.NextCharacter); break;   // RB tapped: the next member, as before
@@ -149,11 +161,13 @@ public static class Driver
             case WheelResult.FollowMe: FollowMe(session); return;           // the dial's left slice
             case WheelResult.Open: return;   // RB held: the squad wheel has the pad (stick, D-pad / LB pages, B cancels)
         }
-        switch (ScreenWheel.Pad(Player!, pad, a => PressGame(session, a)))
+        switch (ScreenWheel.Pad(Player!, pad))
         {
             case WheelResult.Tap: PressGame(session, InputAction.PreviousCharacter); break;   // LB tapped: the previous member, as before
             case WheelResult.Open: return;   // LB held: the screens dial has the pad
         }
+        // A outside windows and menus (0.10): the safe extra option for what the crosshair is on (the Orders dial moved to LB + RB).
+        if (mayDial && Pad.WasPressed(PadButton.South)) SafeExtra.Give(Player!);
         if (Menus.Pad(Player!, pad)) return;   // a menu is open: the pad picks in it (D-pad, interact, select)
 
         PadViews();
@@ -252,6 +266,12 @@ public static class Driver
 
             PressGame(session, action);
         }
+    }
+
+    /// <summary>Presses a game action now (the dials' slices).</summary>
+    internal static void Press(InputAction action)
+    {
+        if (Player is { } p) PressGame(Access.Session(p), action);
     }
 
     /// <summary>Presses the key this install binds to a game action, through the game's own GameHotkeys; an unbound action is counted.</summary>
@@ -544,6 +564,7 @@ public static class Driver
     {
         if (Player is null || !ReferenceEquals(Access.Session(Player), session)) return;
         if (!On) return;
+        Verifier.Tick(Player);   // the dials' checks after a pick (0.10)
 
         if (s_takePressed) TakeControl(session);
         var lead = Controlled(session.CurrentSnapshot);

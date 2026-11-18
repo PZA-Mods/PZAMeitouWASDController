@@ -1,4 +1,4 @@
-# PZA's WASD & Controller Support for Meitou (beta 0.9.24)
+# PZA's WASD & Controller Support for Meitou (beta 0.10.0)
 
 Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
 Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
@@ -14,13 +14,11 @@ button) to switch it on and off; while it is off, Meitou plays as usual.
 
 ![Pick someone up and carry them, then "Follow me!" from the squad dial](https://images.steamusercontent.com/ugc/16769140161264887818/8A45C3B57042E28C195DB73EA50B95C9CB5681C7/)
 
-![The screens dial: the map, then PUT DOWN](https://images.steamusercontent.com/ugc/16413674677192102656/1D57F7E1549CCB04A82A3A6C0A8FF56239CC6CB9/)
-
 ![Trading with the controller: the right stick moves the pointer, A clicks, B closes](https://images.steamusercontent.com/ugc/17742831332842439697/1260C85EE06802644CA95B194D0656FE443C2713/)
 
-| Squad dial (hold RB) | Screens dial (hold LB) | While carrying |
-|---|---|---|
-| ![Squad dial](media/wasd-squad-dial.jpg) | ![Screens dial](media/wasd-screens-dial-map.jpg) | ![Screens dial with PUT DOWN](media/wasd-screens-dial-put-down.jpg) |
+| Squad dial (hold RB) | Screens dial (hold LB) |
+|---|---|
+| ![Squad dial](media/wasd-squad-dial.jpg) | ![Screens dial](media/wasd-screens-dial-map.jpg) |
 
 ## Keyboard and mouse
 
@@ -45,44 +43,56 @@ and loot windows free the pointer by themselves.
 - **Right stick:** look around, up and down too.
 - **RT / ZR:** interact: a tap does what a right click does (attacks a hostile, talks to a friend, loots). **Hold ZR** for the full menu
   (stealth knockout and the other attacks too), aim with the stick, let go to pick.
-- **A** (bottom button): in a window (trade, inventory, loot, the map and the other screens), the click (the right stick moves the pointer there); free otherwise.
+- **A** (bottom button): **the safe action** for what the crosshair is on, named on a line under it: talk, trade, first aid, pick up, loot;
+  open, close, lock a door; your own chest's inventory. Never an attack, a lockpick or a theft: those stay on hold RT. In a window (trade,
+  inventory, loot, the map and the other screens) A is the click (the right stick moves the pointer there).
 - **B** (right button): select / inspect; closes a window; cancels a dial.
 - **Y / X:** over-the-shoulder view / first-person view.
 - **LB / RB:** previous / next squad member.
-  - **Hold LB** for the **screens dial:** inventory, character, map, squads, tech, crafting, build, faction, PUT DOWN while you carry
-    someone and CLEAR JOBS while your character has jobs; aim and let go to open, **B** cancels.
+  - **Hold LB** for the **screens dial:** map, inventory, character, squads, build, crafting, tech, faction, always in the same places;
+    aim and let go to open, **B** cancels.
   - **Hold RB** for the **squad dial:** your squad's faces in a circle; aim and let go to take control, **B** cancels. Top: **everyone**. Bottom: **squad
     pace** on / off. Left: **follow me** (your character calls "Follow me!" and the rest of the squad follows you; choose it again and they
     stop). Big squads get pages (D-pad or LB).
+  - **Hold LB + RB together** for the **orders dial:** **Stances** (Kenshi's eight orders: hold, block, passive, ranged, jobs, taunt,
+    sneak, chase, each lit when on) and, on its second page (D-pad left / right), **Tasks:** stop, medic, rescue, prospect, put down,
+    clear jobs, rest, select all. A slice that doesn't apply now is dimmed and stays in its place.
 - **LT / ZL (hold):** highlight; with ZR: loot / steal. **LT + B:** stop.
 - **L3:** sneak. **R3:** camera behind you; hold to look back.
 - **D-pad:** zoom (normal view), game speed. **Menu / +:** pause; hold for the game menu. **View / -:** on / off.
+
+**While a dial is open time runs at a quarter** through PZA's SlowMo for Meitou (0.3.0 or later), or pauses without it (or Pause /
+Normal, in the window); your own pause or speed change wins. Every pick is checked a moment later: if it changed nothing in the game, a
+short note says so. While you use the controller, **a line at the top of the screen** says what its buttons do right now (setting
+"Controller prompts").
 
 The full layout is in the picture above and on the window's KEYS tab. A Switch Pro controller works best when Meitou is started through
 Steam (as a non-Steam game), so Steam Input handles it.
 
 ## The window
 Starts as a tiny **WASD ON / OFF** button (top right): click to switch, **+** opens the window, drag it, mouse wheel for its opacity. Tabs:
-CONTROL (on / off, camera view, look speed, invert, shoulder side), KEYS (change the keys; the controller list) and HELP. Everything is also
+CONTROL (on / off, camera view, look speed, invert, shoulder side, time under a dial), KEYS (change the keys; the controller list) and HELP. Everything is also
 on **Settings > Mods** under the mod's row.
 
 ## Requires
-**Meitou 0.20.1 up to 0.21.x.** It refuses to load on other Meitou versions.
+**Meitou 0.20.1 or newer** (checked on 0.20.1, 0.21.0 and 0.22.1). On a newer Meitou that lacks something it needs, it stays off and its
+log line says what is missing.
 
 ## Install
 - **Workshop:** subscribe, then tick **PZAWASDControlMeitou** in Meitou's mod list.
-- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.9.24-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
+- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.10.0-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
   **PZAWASDControl** in Meitou's mod list.
 - No items or world data; load order doesn't matter. Safe to remove at any time.
 
 ## This is a beta
-The basics (walking, stairs, the views, the controller) were played a lot, and so were ZR as interact, the controller pointer in trade
-windows, the squad and screens dials with PUT DOWN and "Follow me!". **This build (0.9.24) passed its offline checks on Meitou 0.20.1 and
-0.21.0; its newest parts are not played in game yet:** CLEAR JOBS on the screens dial, the camera moving out of the way while you carry
-someone, "B: cancel" on the dials, and the right stick waiting for the middle after a dial closes.
+The basics (walking, stairs, the views, the controller, ZR, the squad and screens dials, "Follow me!") were played a lot. **This build
+(0.10.0) passed its offline checks on Meitou 0.20.1, 0.21.0 and 0.22.1 and its fuzz tests; its newest parts are not played much yet:** the
+orders dial on LB + RB, A's safe action, time slowing under a dial, the line of prompts at the top, and the checks after each pick. Tell us
+how they feel.
 
 Known limits:
-- Removing a single job from a character's job list has no controller shortcut yet (CLEAR JOBS removes them all).
+- Removing a single job from a character's job list has no controller shortcut yet (CLEAR JOBS on the orders dial removes them all).
+- A's safe action covers people, doors and your own containers; beds and buildings still go through RT.
 - A right click on your own squad member in a view usually opens nothing (Meitou has no action for them there).
 - The squad dial shows the squad bar's members, at most 30.
 - Follow me's on / off only knows the follows it started itself.
@@ -94,7 +104,7 @@ Known limits:
 - Texts are in English only for now.
 
 ## Planned
-Ideas, no dates: jobs on the controller (remove one from a dial; clearing them all is in), a new use for A, actions for your own squad members in a view, mouse-wheel
+Ideas, no dates: jobs on the controller (remove one from a dial; clearing them all is in), A's safe action for beds and buildings, actions for your own squad members in a view, mouse-wheel
 steps into the views, vibration when your character is hit, texts in Russian, Chinese and Japanese.
 
 ## Reporting a bug
@@ -104,4 +114,5 @@ Workshop page's Bug reports discussion.
 
 ## Licence and source
 GNU GPL version 3 or later; the source is attached to the release (`-source.zip`). Made by **PZA**. Inspired by Direct Control for Kenshi
-(smokefoolius); no code shared. Unofficial fan-made mod; not affiliated with Lo-Fi Games.
+(smokefoolius); no code shared. Thanks to **BeatTheCount**, whose Gamepad mod for Meitou gave us the ideas of a safe extra button named on
+screen, lighting the stances from your character's orders, and the line of prompts; we rewrote them in our own code. Unofficial fan-made mod; not affiliated with Lo-Fi Games.

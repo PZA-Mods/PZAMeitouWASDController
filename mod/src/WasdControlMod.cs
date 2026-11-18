@@ -27,7 +27,7 @@ public sealed class WasdControlMod : IMod
         context.AddDebugCommand(Strings.Get("debug.window"), _ => { WasdWindow.Window.Open(); return Strings.Get("debug.window"); });
         // the window and the tiny button: PZA's Meitou UI (compiled in)
         PZA.MeitouUi.PzaUi.Log = s => Log.Line(s);
-        PZA.MeitouUi.PzaUi.EachFrame = () => { WasdWindow.EachFrame(); SquadWheel.EachFrame(); ScreenWheel.EachFrame(); };
+        PZA.MeitouUi.PzaUi.EachFrame = () => { WasdWindow.EachFrame(); SquadWheel.EachFrame(); ScreenWheel.EachFrame(); OrdersDial.EachFrame(); DialTime.EachFrame(); };
         WasdWindow.Setup();
         if (!PZA.MeitouUi.PzaUi.Install(context)) Log.Line(Strings.Get("log.ui_off"));
         Log.Line(Strings.Format("log.loaded", version));

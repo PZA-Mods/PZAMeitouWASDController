@@ -468,6 +468,43 @@ public static class Access
         return s_verbs?.Invoke(cm, [target]) as List<(string Caption, Action Give)> ?? [];
     }
 
+    // ---------------------------------------------------------------- doors and containers under a point (0.10, tap A)
+    static PropertyInfo? s_furniture;
+    static MethodInfo? s_pickDoor, s_pickContainer, s_doorVerbs, s_containerVerbs;
+
+    /// <summary>
+    /// The door at <paramref name="p"/> and the right-click menu's verbs for it (FurnitureUse.PickDoor, then ContextMenuWindow.DoorVerbs: the
+    /// menu's own captions and actions), or null when there is no door or a member is missing.
+    /// </summary>
+    public static IReadOnlyList<(string Caption, Action Give)>? DoorVerbsAt(object player, Vector2 p)
+    {
+        if (Furniture(player) is not { } f || s_contextWindow.GetValue(player) is not { } cm) return null;
+        s_pickDoor ??= AccessTools.Method(f.GetType(), "PickDoor", [typeof(Vector2)]);
+        if (s_pickDoor?.Invoke(f, [p]) is not { } pick) return null;   // a boxed (DoorPick, bool), or null for no door
+        s_doorVerbs ??= AccessTools.Method(cm.GetType(), "DoorVerbs");
+        return s_doorVerbs?.Invoke(cm, [pick]) as List<(string Caption, Action Give)>;
+    }
+
+    /// <summary>
+    /// The container at <paramref name="p"/>: whether it is the player's faction's, and the menu's verbs for it (FurnitureUse.PickContainer,
+    /// ContextMenuWindow.ContainerVerbs); null when there is none or a member is missing.
+    /// </summary>
+    public static (bool Ours, IReadOnlyList<(string Caption, Action Give)> Verbs)? ContainerAt(object player, Vector2 p)
+    {
+        if (Furniture(player) is not { } f || s_contextWindow.GetValue(player) is not { } cm) return null;
+        s_pickContainer ??= AccessTools.Method(f.GetType(), "PickContainer", [typeof(Vector2)]);
+        if (s_pickContainer?.Invoke(f, [p]) is not global::Meitou.Simulation.Locks.ContainerSpot spot) return null;
+        s_containerVerbs ??= AccessTools.Method(cm.GetType(), "ContainerVerbs");
+        if (s_containerVerbs?.Invoke(cm, [spot]) is not List<(string Caption, Action Give)> verbs) return null;
+        return (spot.Owner == Session(player).World.Player.Faction, verbs);
+    }
+
+    static object? Furniture(object player)
+    {
+        s_furniture ??= AccessTools.Property(PlayerInterface, "Furniture");
+        return s_furniture?.GetValue(player);
+    }
+
     static MethodInfo? s_escapeKey;
 
     /// <summary>The interface's own Esc (PlayerInterface.EscapeKey): closes the trade or the loot with the inventories, else the top window.</summary>
@@ -484,6 +521,16 @@ public static class Access
     {
         s_openScreens ??= AccessTools.Property(PlayerInterface, "OpenScreens");
         return s_openScreens?.GetValue(player) as IReadOnlyList<string> ?? [];
+    }
+
+    static MethodInfo? s_execute;
+
+    /// <summary>The interface's own action, as its buttons and keys run it (PlayerInterface.ExecuteUiAction: "inventory", "stats", "stop",
+    /// "medic", "rescue", "prospect", "order.Block" ...).</summary>
+    public static void UiAction(object player, string action, string argument = "")
+    {
+        s_execute ??= AccessTools.Method(PlayerInterface, "ExecuteUiAction", [typeof(string), typeof(string)]);
+        s_execute!.Invoke(player, [action, argument]);
     }
 
     /// <summary>Selects exactly this character (not additive), as a left click on it does.</summary>

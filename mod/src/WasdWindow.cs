@@ -34,16 +34,16 @@ public static class WasdWindow
             ("TabMain", [
                 L.Text("lbState", 0.03, 0.01, 0.94, 0.07),
                 L.Button("On", 0.03, 0.09, 0.455, 0.085), L.Button("Off", 0.515, 0.09, 0.455, 0.085),
-                L.Text("lbCamera", 0.03, 0.20, 0.94, 0.06),
-                L.Button("ViewNormal", 0.03, 0.27, 0.30, 0.085), L.Button("ViewShoulder", 0.35, 0.27, 0.30, 0.085),
-                L.Button("ViewFirst", 0.67, 0.27, 0.30, 0.085),
-                L.Text("lbLook", 0.03, 0.38, 0.94, 0.06),
-                L.Button("LookSlow", 0.03, 0.45, 0.30, 0.085), L.Button("LookNormal", 0.35, 0.45, 0.30, 0.085),
-                L.Button("LookFast", 0.67, 0.45, 0.30, 0.085),
-                L.Text("lbInvert", 0.03, 0.56, 0.94, 0.06),
-                L.Button("InvertOff", 0.03, 0.63, 0.455, 0.085), L.Button("InvertOn", 0.515, 0.63, 0.455, 0.085),
-                L.Text("lbSide", 0.03, 0.74, 0.94, 0.06),
-                L.Button("SideLeft", 0.03, 0.81, 0.455, 0.085), L.Button("SideRight", 0.515, 0.81, 0.455, 0.085)]),
+                L.Text("lbCamera", 0.03, 0.19, 0.94, 0.055),
+                L.Button("ViewNormal", 0.03, 0.25, 0.3, 0.08), L.Button("ViewShoulder", 0.35, 0.25, 0.3, 0.08), L.Button("ViewFirst", 0.67, 0.25, 0.3, 0.08),
+                L.Text("lbLook", 0.03, 0.35, 0.94, 0.055),
+                L.Button("LookSlow", 0.03, 0.41, 0.3, 0.08), L.Button("LookNormal", 0.35, 0.41, 0.3, 0.08), L.Button("LookFast", 0.67, 0.41, 0.3, 0.08),
+                L.Text("lbInvert", 0.03, 0.51, 0.94, 0.055),
+                L.Button("InvertOff", 0.03, 0.57, 0.455, 0.08), L.Button("InvertOn", 0.515, 0.57, 0.455, 0.08),
+                L.Text("lbSide", 0.03, 0.67, 0.94, 0.055),
+                L.Button("SideLeft", 0.03, 0.73, 0.455, 0.08), L.Button("SideRight", 0.515, 0.73, 0.455, 0.08),
+                L.Text("lbDialTime", 0.03, 0.83, 0.94, 0.055),
+                L.Button("DialSlow", 0.03, 0.89, 0.3, 0.08), L.Button("DialPause", 0.35, 0.89, 0.3, 0.08), L.Button("DialNormal", 0.67, 0.89, 0.3, 0.08)]),
             ("TabKeys", [
                 L.Text("lbKeysIntro", 0.03, 0.01, 0.94, 0.11, wrap: true),
                 L.Text("lbKeyToggle", 0.03, 0.13, 0.61, 0.075), L.Button("KeyToggle", 0.65, 0.13, 0.32, 0.075),
@@ -103,7 +103,7 @@ public static class WasdWindow
     static void Bind(UiBindings b)
     {
         var s = Driver.Settings;
-        PzaWindow.Enable(b, "On", "Off", "ViewNormal", "ViewShoulder", "ViewFirst", "LookSlow", "LookNormal", "LookFast", "InvertOff", "InvertOn",
+        PzaWindow.Enable(b, "On", "Off", "ViewNormal", "ViewShoulder", "ViewFirst", "LookSlow", "LookNormal", "LookFast", "InvertOff", "InvertOn", "DialSlow", "DialPause", "DialNormal",
             "SideLeft", "SideRight", "KeyToggle", "KeyShoulder", "KeyFirst", "KeyTake");
         b.Text["Root"] = Strings.Get("win.title");
         PzaWindow.TabText(b, "Tabs", 0, Strings.Get("tab.control"));
@@ -127,6 +127,10 @@ public static class WasdWindow
         b.Text["lbSide"] = Strings.Get("win.side");
         b.Text["SideLeft"] = Pick("win.left", s.ShoulderSide == "Left");
         b.Text["SideRight"] = Pick("win.right", s.ShoulderSide != "Left");
+        b.Text["lbDialTime"] = Strings.Get("win.dial_time");
+        b.Text["DialSlow"] = Pick("win.dial_slow", s.DialTime == "Slow");
+        b.Text["DialPause"] = Pick("win.dial_pause", s.DialTime == "Pause");
+        b.Text["DialNormal"] = Pick("win.normal", s.DialTime == "Normal");
 
         b.Text["lbKeysIntro"] = Strings.Get("keys.intro");
         foreach (var a in KeyRows)
@@ -169,6 +173,9 @@ public static class WasdWindow
             case "LookSlow": Driver.SetSetting(nameof(DcSettings.LookSpeed), "Slow"); break;
             case "LookNormal": Driver.SetSetting(nameof(DcSettings.LookSpeed), "Normal"); break;
             case "LookFast": Driver.SetSetting(nameof(DcSettings.LookSpeed), "Fast"); break;
+            case "DialSlow": Driver.SetSetting(nameof(DcSettings.DialTime), "Slow"); break;
+            case "DialPause": Driver.SetSetting(nameof(DcSettings.DialTime), "Pause"); break;
+            case "DialNormal": Driver.SetSetting(nameof(DcSettings.DialTime), "Normal"); break;
             case "InvertOff": Driver.SetSetting(nameof(DcSettings.InvertLook), false); break;
             case "InvertOn": Driver.SetSetting(nameof(DcSettings.InvertLook), true); break;
             case "SideLeft": Driver.SetSetting(nameof(DcSettings.ShoulderSide), "Left"); break;

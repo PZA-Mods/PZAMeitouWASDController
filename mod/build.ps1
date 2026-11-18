@@ -4,11 +4,20 @@
 #   .\build.ps1 -Check     also run tools\check on the staged folder (Meitou 0.20.1's manifest rules, the settings validation, the three patches
 #                          applied to the real MeitouClient.dll and the input rule through the patched InputBindings.Resolve), on a copy of
 #                          the .NET 11 runtime inside the Meitou release. It never starts the game.
+#   .\build.ps1 -Fuzz      also run the property fuzzer (tools\check\Fuzz.cs) on the mod's pure rules: dial aim, squad pages, the prompt
+#                          strip's fitting, the safe picks, clear jobs, time under a dial on Meitou's real clock. -FuzzRuns N (default
+#                          200000 per target), -FuzzSeed S (default: random, printed; pass it back to repeat a failure), -FuzzSeconds T
+#                          (run each target for T seconds instead), -FuzzOnly <target>. Failures shrink and land in tests\fuzz\corpus.
 #   -MeitouDir <dir>       the unpacked Meitou release (default: MeitouDir in mod\local.props, git-ignored)
 #
 # It installs nothing (see ..\README.md "Install"). out\ is git-ignored.
 param(
     [switch]$Check,
+    [switch]$Fuzz,
+    [int]$FuzzRuns = 200000,
+    [int]$FuzzSeed = -1,
+    [double]$FuzzSeconds = 0,
+    [string]$FuzzOnly = "",
     [string]$MeitouDir = ""
 )
 $ErrorActionPreference = "Stop"
@@ -45,7 +54,7 @@ try {
 Write-Host "staged $stage :"
 Get-ChildItem $stage | ForEach-Object { Write-Host ("  {0,-22} {1,8} bytes" -f $_.Name, $_.Length) }
 
-if ($Check) {
+if ($Check -or $Fuzz) {
     $rt = Join-Path $here "out\checkrt"
     New-Item -ItemType Directory -Force $rt | Out-Null
     # The runtime and Meitou assemblies the checker needs, copied from the release (nothing in the release is changed).
@@ -60,6 +69,24 @@ if ($Check) {
     $cfg = '{ "runtimeOptions": { "tfm": "net11.0", "includedFrameworks": [ { "name": "Microsoft.NETCore.App", "version": "11.0.0" } ] } }'
     Set-Content -Path (Join-Path $rt "check.runtimeconfig.json") -Value $cfg -Encoding ascii
     Push-Location $rt
-    try { & dotnet exec --runtimeconfig check.runtimeconfig.json check.dll $stage "C:\Program Files (x86)\Steam\steamapps\common\Kenshi" } finally { Pop-Location }
-    if ($LASTEXITCODE -ne 0) { throw "check FAILED ($LASTEXITCODE)" }
+    try
+    {
+        if ($Check)
+        {
+            & dotnet exec --runtimeconfig check.runtimeconfig.json check.dll $stage "C:\Program Files (x86)\Steam\steamapps\common\Kenshi"
+            if ($LASTEXITCODE -ne 0) { throw "check FAILED ($LASTEXITCODE)" }
+        }
+        if ($Fuzz)
+        {
+            $slowmo = [System.IO.Path]::GetFullPath((Join-Path $here "..\..\PZAMeitouSlowMo\mod\out\PZASlowMo\PZASlowMo.Meitou.dll"))
+            $env:PZA_FUZZ_SLOWMO = if (Test-Path $slowmo) { $slowmo } else { "" }
+            if ($FuzzSeed -lt 0) { $FuzzSeed = Get-Random -Maximum 2147483647 }
+            $corpus = [System.IO.Path]::GetFullPath((Join-Path $here "..\tests\fuzz\corpus"))
+            $fuzzArgs = @("fuzz", $FuzzRuns, $FuzzSeed, $FuzzSeconds.ToString([Globalization.CultureInfo]::InvariantCulture), $corpus)
+            if ($FuzzOnly) { $fuzzArgs += $FuzzOnly }
+            & dotnet exec --runtimeconfig check.runtimeconfig.json check.dll @fuzzArgs
+            if ($LASTEXITCODE -ne 0) { throw "fuzz FAILED ($LASTEXITCODE), seed $FuzzSeed" }
+        }
+    }
+    finally { Pop-Location }
 }

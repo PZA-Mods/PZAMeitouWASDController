@@ -89,7 +89,7 @@ public static class CrosshairAttack
     }
 
     /// <summary>Where the attack aims: the screen's centre while the mouse looks (a view), else the pointer.</summary>
-    static Vector2 Aim(object player)
+    internal static Vector2 Aim(object player)
     {
         if (!Look.On) return Access.Pointer(player);
         var (w, h) = Access.UiSize(player);

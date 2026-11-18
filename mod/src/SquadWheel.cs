@@ -103,6 +103,12 @@ public static class SquadWheel
 
     public static bool IsOpen => s_open;
 
+    /// <summary>Forgets an RB press that has not opened the wheel (the LB + RB chord took it): no tap follows.</summary>
+    public static void Abort()
+    {
+        if (!s_open) s_rbSince = -1;
+    }
+
     /// <summary>The pad's RB this control tick. Tap: the caller presses NextCharacter; Everyone: SelectAll; Open: the wheel has the pad.</summary>
     public static WheelResult Pad(object player, PadState pad, CharacterId? controlled)
     {
@@ -140,7 +146,7 @@ public static class SquadWheel
             }
         }
 
-        int slot = SlotAt(pad.Right, Slots(count));
+        int slot = DialAim.Slot(pad.Right, Slots(count), SlotOf(s_lit, count));   // 0.10: the angle margin (no flicker on borders)
         if (slot >= 0 && EntryAt(s_page, slot, count) is var e and not Empty && e != s_lit)
         {
             s_lit = e;
@@ -177,6 +183,15 @@ public static class SquadWheel
         else Counters.Add("wheel.released_empty");
         Close(null);
         return WheelResult.Open;
+    }
+
+    /// <summary>The slice that holds <paramref name="entry"/> on the page shown, or -1.</summary>
+    static int SlotOf(int entry, int count)
+    {
+        if (entry == None) return -1;
+        int slots = Slots(count);
+        for (int i = 0; i < slots; i++) if (EntryAt(s_page, i, count) == entry) return i;
+        return -1;
     }
 
     static bool Pressed(PadButton b) => global::PZA.WASDControl.Meitou.Pad.WasPressed(b);
@@ -252,14 +267,22 @@ public static class SquadWheel
 
     static void DrawInterfacePostfix(object __instance, object[] __args)
     {
-        if (!s_open && !ScreenWheel.IsOpen) return;
         try
         {
             if (s_loopOverlay!.GetValue(__instance) is not DebugOverlay overlay || __args.Length == 0 || __args[0] is not { } size) return;
             var t = size.GetType();
             if (t.GetField("X")?.GetValue(size) is not int w || t.GetField("Y")?.GetValue(size) is not int hgt || w <= 0 || hgt <= 0) return;
+            if (!s_open && !ScreenWheel.IsOpen && !OrdersDial.IsOpen)
+            {
+                if (Driver.On && Driver.Player is { } p)
+                {
+                    if (!Look.WindowOpen(p)) SafeExtra.Draw(overlay, w, hgt);   // the target line (0.10)
+                    Prompts.Draw(overlay, w, hgt, p);   // the prompt strip (0.10)
+                }
+                return;
+            }
             if (s_open) Draw(overlay, w, hgt);
-            else ScreenWheel.Draw(overlay, w, hgt);
+            else if (Driver.Player is { } player) (ScreenWheel.IsOpen ? ScreenWheel.Dial : OrdersDial.Dial).Draw(overlay, w, hgt, player);
             Counters.Add("wheel.drawn");
         }
         catch (Exception e)
