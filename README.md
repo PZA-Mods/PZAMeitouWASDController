@@ -1,4 +1,4 @@
-# PZA's WASD & Controller Support for Meitou (beta 0.10.0)
+# PZA's WASD & Controller Support for Meitou (beta 0.10.1)
 
 Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
 Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
@@ -9,6 +9,15 @@ button) to switch it on and off; while it is off, Meitou plays as usual.
 **Download:** the mod zip and its source zip are on the [Releases page](https://github.com/PZA-Mods/PZAMeitouWASDController/releases). Building from source: [BUILD.md](BUILD.md).
 
 ![PZA's WASD & Controller Support: the controller layout](media/controller-layout.png)
+
+## New in 0.10.1
+- **Sliders for look speed and the over-the-shoulder field of view**, on Settings > Mods and in the mod's window.
+- **Dials slow time on their own.** PZA's SlowMo for Meitou is no longer needed for it.
+- **The controller in Meitou's settings panel** (A clicks, B closes it) **and in build mode** (rotate, height, slope, floor, undo, place).
+- **Better steps:** walks down tall stairs with a gap at their foot, and slides past columns, walls and corners instead of stopping.
+- **B closes a window** even when the game's own Esc leaves it open.
+- **Fixed on Meitou 0.21 and newer:** the window's lists and Help pages, and the build window's buttons (the 0.10.0 known problem).
+- Loads on Meitou 0.20.1 and newer (no upper limit; checked on 0.20.1, 0.21.0 and 0.22.1).
 
 ## In action
 
@@ -61,7 +70,7 @@ and loot windows free the pointer by themselves.
 - **L3:** sneak. **R3:** camera behind you; hold to look back.
 - **D-pad:** zoom (normal view), game speed. **Menu / +:** pause; hold for the game menu. **View / -:** on / off.
 
-**While a dial is open time runs at a quarter** through PZA's SlowMo for Meitou (0.3.0 or later), or pauses without it (or Pause /
+**While a dial is open time runs at a quarter** (or Pause /
 Normal, in the window); your own pause or speed change wins. Every pick is checked a moment later: if it changed nothing in the game, a
 short note says so. While you use the controller, **a line at the top of the screen** says what its buttons do right now (setting
 "Controller prompts").
@@ -80,13 +89,13 @@ log line says what is missing.
 
 ## Install
 - **Workshop:** subscribe, then tick **PZAWASDControlMeitou** in Meitou's mod list.
-- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.10.0-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
+- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.10.1-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
   **PZAWASDControl** in Meitou's mod list.
 - No items or world data; load order doesn't matter. Safe to remove at any time.
 
 ## This is a beta
 The basics (walking, stairs, the views, the controller, ZR, the squad and screens dials, "Follow me!") were played a lot. **This build
-(0.10.0) passed its offline checks on Meitou 0.20.1, 0.21.0 and 0.22.1 and its fuzz tests; its newest parts are not played much yet:** the
+(0.10.1) passed its offline checks on Meitou 0.20.1, 0.21.0 and 0.22.1 and its fuzz tests; its newest parts are not played much yet:** the
 orders dial on LB + RB, A's safe action, time slowing under a dial, the line of prompts at the top, and the checks after each pick. Tell us
 how they feel.
 

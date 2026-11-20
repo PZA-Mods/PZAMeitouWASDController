@@ -514,6 +514,182 @@ public static class Access
         s_escapeKey?.Invoke(player, null);
     }
 
+    #region Meitou's build mode (0.10.1, BuildPad)
+
+    static PropertyInfo? s_build, s_buildOn;
+    static MethodInfo? s_buildKey, s_buildKeyUp, s_buildAction, s_buildDiscard, s_buildCurrent;
+    static bool s_buildLooked;
+
+    /// <summary>PlayerInterface.Build (BuildMode) and its members, once; false when one is missing (the pad then has no build rules).</summary>
+    static object? Build(object player)
+    {
+        if (!s_buildLooked)
+        {
+            s_buildLooked = true;
+            s_build = AccessTools.Property(PlayerInterface, "Build");
+            var t = s_build?.PropertyType;
+            if (t is not null)
+            {
+                s_buildOn = AccessTools.Property(t, "BuildModeOn");
+                s_buildKey = AccessTools.Method(t, "BuildKey", [typeof(Key), typeof(bool)]);
+                s_buildKeyUp = AccessTools.Method(t, "BuildKeyUp", [typeof(Key)]);
+                s_buildAction = AccessTools.Method(t, "BuildAction", [typeof(global::Meitou.Game.Ui.MyGuiEvent)]);
+                s_buildDiscard = AccessTools.Method(t, "BuildDiscard", Type.EmptyTypes);
+                s_buildCurrent = AccessTools.Method(t, "CurrentBuilding", Type.EmptyTypes);
+            }
+            bool all = s_buildOn is not null && s_buildKey is not null && s_buildKeyUp is not null && s_buildAction is not null
+                && s_buildDiscard is not null && s_buildCurrent is not null;
+            if (!all)
+            {
+                s_build = null;
+                Counters.Add("build.missing");
+                Log.Line("WASD Control: Meitou's build mode members not found; the controller has no build controls.");
+            }
+        }
+        return s_build?.GetValue(player);
+    }
+
+    /// <summary>Meitou's build mode is on (BuildMode.BuildModeOn).</summary>
+    public static bool BuildModeOn(object player) => Build(player) is { } b && s_buildOn!.GetValue(b) is true;
+
+    /// <summary>A build key goes down (BuildMode.BuildKey, as the keyboard's: , . - = [ ] held, Backspace undo).</summary>
+    public static void BuildKey(object player, Key key)
+    {
+        if (Build(player) is { } b) s_buildKey!.Invoke(b, [key, false]);
+    }
+
+    /// <summary>A build key goes up (BuildMode.BuildKeyUp).</summary>
+    public static void BuildKeyUp(object player, Key key)
+    {
+        if (Build(player) is { } b) s_buildKeyUp!.Invoke(b, [key]);
+    }
+
+    /// <summary>A build window button, as its click (BuildMode.BuildAction: ConfirmButton, UndoButton, FloorArrowUp, FloorArrowDown).</summary>
+    public static void BuildButton(object player, string widget)
+    {
+        if (Build(player) is { } b && GuiEvent("build", widget, "click") is { } e) s_buildAction!.Invoke(b, [e]);
+    }
+
+    /// <summary>
+    /// A MyGuiEvent (screen, widget, kind), built through whichever constructor the running Meitou has: 0.21 changed it (refcheck 2026-11-19:
+    /// the 0.20.1 constructor (String, String, String, String, Single) is gone, so a direct `new` threw MissingMethodException on 0.21+).
+    /// The first three string parameters are filled, the rest get their defaults. Null (logged once) when no constructor fits.
+    /// </summary>
+    public static global::Meitou.Game.Ui.MyGuiEvent? GuiEvent(string screen, string widget, string kind)
+    {
+        foreach (var c in typeof(global::Meitou.Game.Ui.MyGuiEvent).GetConstructors().OrderBy(c => c.GetParameters().Length))
+        {
+            var ps = c.GetParameters();
+            if (ps.Length < 3 || ps.Take(3).Any(p => p.ParameterType != typeof(string))) continue;
+            var args = new object?[ps.Length];
+            args[0] = screen;
+            args[1] = widget;
+            args[2] = kind;
+            for (int i = 3; i < ps.Length; i++)
+            {
+                var t = ps[i].ParameterType;
+                args[i] = ps[i].HasDefaultValue && ps[i].DefaultValue is not (DBNull or System.Reflection.Missing) ? ps[i].DefaultValue
+                    : t.IsValueType ? Activator.CreateInstance(t) : t == typeof(string) ? "" : null;
+            }
+            return (global::Meitou.Game.Ui.MyGuiEvent)c.Invoke(args);
+        }
+        if (!s_guiEventMissing)
+        {
+            s_guiEventMissing = true;
+            Counters.Add("build.gui_event_missing");
+            Log.Line("WASD Control: no MyGuiEvent constructor takes (screen, widget, kind); the pad's build window buttons do nothing.");
+        }
+        return null;
+    }
+
+    static bool s_guiEventMissing;
+
+    /// <summary>A building is held (BuildMode.CurrentBuilding is not null).</summary>
+    public static bool BuildHolding(object player) => Build(player) is { } b && s_buildCurrent!.Invoke(b, null) is not null;
+
+    /// <summary>Drops the held building (BuildMode.BuildDiscard: the right click's "Clear Building").</summary>
+    public static void BuildDiscard(object player)
+    {
+        if (Build(player) is { } b) s_buildDiscard!.Invoke(b, null);
+    }
+
+    #endregion
+
+    #region Meitou's settings panel (0.10.1)
+
+    // Play test 2026-11-18: Esc > Options opens Meitou's settings panel (SettingsMenu, GameLoop._panel); A on its MODS button did nothing, and
+    // B closed the game menu under it instead of the panel. The panel is not a MyGui screen: the game loop gives it the mouse first
+    // (GameLoop.PointerDown / PointerUp: _panel.MouseDown before the interface) and the keys (OnKeyDown: _panel.KeyDown while it is Visible), so
+    // the pad's A went past it (PlayerInterface.MouseDown) and its B was the interface's Esc (PlayerInterface.EscapeKey).
+    // While the panel is shown the pad does what the mouse and the keyboard do: A goes through the loop's own pointer path, B is the panel's Esc.
+
+    static object? s_loop;
+    static PropertyInfo? s_loopPanel, s_panelVisible;
+    static MethodInfo? s_loopDown, s_loopUp, s_loopPixels, s_panelKey, s_panelMove;
+    static bool s_panelLooked;
+
+    /// <summary>The game loop, once a frame (GameLoop.PlaceSceneCameras prefix).</summary>
+    public static void RememberLoop(object loop) => s_loop = loop;
+
+    /// <summary>Finds the members once; false (and the pad keeps its usual window rules) when one is missing.</summary>
+    static bool PanelMembers()
+    {
+        if (s_panelLooked) return s_loopPanel is not null && s_panelVisible is not null;
+        if (s_loop is null) return false;
+
+        s_panelLooked = true;
+        var loop = s_loop.GetType();
+        s_loopPanel = AccessTools.Property(loop, "Panel");
+        s_panelVisible = s_loopPanel is null ? null : AccessTools.Property(s_loopPanel.PropertyType, "Visible");
+        s_loopDown = AccessTools.Method(loop, "PointerDown", [typeof(MouseButton?), typeof(Vector2)]);
+        s_loopUp = AccessTools.Method(loop, "PointerUp", [typeof(MouseButton?), typeof(Vector2)]);
+        s_loopPixels = AccessTools.Method(loop, "Pixels", [typeof(Vector2)]);
+        s_panelKey = s_loopPanel is null ? null : AccessTools.Method(s_loopPanel.PropertyType, "KeyDown", [typeof(Key), typeof(bool), typeof(bool)]);
+        s_panelMove = s_loopPanel is null ? null : AccessTools.Method(s_loopPanel.PropertyType, "MouseMove", [typeof(Vector2)]);   // optional: hover, drags
+        bool all = s_loopPanel is not null && s_panelVisible is not null && s_loopDown is not null && s_loopUp is not null && s_loopPixels is not null && s_panelKey is not null;
+        Log.Line(all ? "WASD Control: Meitou's settings panel: the pad clicks and closes it as the mouse and Esc do."
+            : "WASD Control: Meitou's settings panel members not found; the pad uses its usual window rules there.");
+        if (!all) Counters.Add("settings_panel.missing");
+        return all;
+    }
+
+    static object? Panel() => PanelMembers() ? s_loopPanel!.GetValue(s_loop) : null;
+
+    /// <summary>Meitou's settings panel is shown (Esc > Options, or the settings key).</summary>
+    public static bool SettingsPanelOpen() => Panel() is { } panel && s_panelVisible!.GetValue(panel) is true;
+
+    /// <summary>The panel's own Esc (SettingsMenu.KeyDown, as GameLoop.OnKeyDown passes it): a choice, a search or a number edit first, else it
+    /// closes with Esc's close-all. False when the panel is not shown.</summary>
+    public static bool SettingsPanelEscape()
+    {
+        if (!SettingsPanelOpen()) return false;
+
+        s_panelKey!.Invoke(Panel(), [Key.Escape, false, false]);
+        return true;
+    }
+
+    /// <summary>The pad pointer moved to <paramref name="window"/> (window coordinates): the panel's hover and slider drags follow, as
+    /// GameLoop.OnMouseMove passes a real move (SettingsMenu.MouseMove in framebuffer pixels).</summary>
+    public static void SettingsPanelMove(Vector2 window)
+    {
+        if (s_panelMove is null || !SettingsPanelOpen() || s_loop is not { } loop) return;
+
+        s_panelMove.Invoke(Panel(), [(Vector2)s_loopPixels!.Invoke(loop, [window])!]);
+    }
+
+    /// <summary>A mouse button at the pointer through the game loop's own path (GameLoop.PointerDown / PointerUp at the loop's pointer, in
+    /// framebuffer pixels, as a real mouse event): the settings panel, then the interface and the world. False when a member is missing.</summary>
+    public static bool LoopClick(MouseButton button, bool down)
+    {
+        if (!PanelMembers() || s_loop is not { } loop || LoopPointer(loop) is not { } at) return false;
+
+        var pixels = (Vector2)s_loopPixels!.Invoke(loop, [at])!;
+        (down ? s_loopDown : s_loopUp)!.Invoke(loop, [(MouseButton?)button, pixels]);
+        return true;
+    }
+
+    #endregion
+
     static PropertyInfo? s_openScreens;
 
     /// <summary>The interface's open screens, bottom to top (PlayerInterface.OpenScreens: "inventory", "trader", "loot", ...); empty when missing.</summary>
@@ -521,6 +697,17 @@ public static class Access
     {
         s_openScreens ??= AccessTools.Property(PlayerInterface, "OpenScreens");
         return s_openScreens?.GetValue(player) as IReadOnlyList<string> ?? [];
+    }
+
+    static MethodInfo? s_updateMenuPause;
+
+    /// <summary>Closes one game screen by its id, as its own close button does (MyGuiScreenHost.Close), then lets the game re-check its menu
+    /// pause (PlayerInterface.UpdateMenuPause), as the screens dial does.</summary>
+    public static void CloseScreen(object player, string id)
+    {
+        PZA.MeitouUi.Access.FaithfulScreens(player).Close(id);
+        s_updateMenuPause ??= AccessTools.Method(PlayerInterface, "UpdateMenuPause");
+        s_updateMenuPause?.Invoke(player, null);
     }
 
     static MethodInfo? s_execute;

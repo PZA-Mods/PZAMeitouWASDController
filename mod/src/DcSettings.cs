@@ -50,9 +50,16 @@ public sealed class DcSettings
     [Setting(Strings.En.KeyTakeLabel, Hint = Strings.En.KeyHint, Options = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], SubGroup = Strings.En.KeysGroup)]
     public string KeyTake { get; set; } = "G";
 
-    /// <summary>How fast the mouse and the right stick turn the views.</summary>
-    [Setting(Strings.En.LookSpeedLabel, Hint = Strings.En.LookSpeedHint, Options = ["Slow", "Normal", "Fast"], SubGroup = Strings.En.ViewsGroup)]
-    public string LookSpeed { get; set; } = "Normal";
+    public const double MinLook = 0.1, MaxLook = 2, LookStep = 0.05;
+    public const double MinFov = ViewLens.MinDeg, MaxFov = ViewLens.MaxDeg, FovStep = 1;
+
+    /// <summary>How fast the mouse and the right stick turn the views, a factor (1 = the old Normal; the old Slow was 0.6, Fast 1.6). 0.10.1:
+    /// a slider (Discord 2026-11-18: "even on slow its too fast"), so it goes down to 0.1.</summary>
+    [Setting(Strings.En.LookSpeedLabel, Hint = Strings.En.LookSpeedHint, Min = MinLook, Max = MaxLook, Step = LookStep, SubGroup = Strings.En.ViewsGroup)]
+    public double LookScale { get; set; } = 1;
+    /// <summary>The over-the-shoulder view's field of view, degrees (Meitou's lens is 50). 0.10.1, the same request: a wider third-person view.</summary>
+    [Setting(Strings.En.FovLabel, Hint = Strings.En.FovHint, Min = MinFov, Max = MaxFov, Step = FovStep, SubGroup = Strings.En.ViewsGroup)]
+    public double ShoulderFov { get; set; } = ViewLens.DefaultDeg;
     /// <summary>Mouse / stick forward looks down (flight style).</summary>
     [Setting(Strings.En.InvertLabel, Hint = Strings.En.InvertHint, SubGroup = Strings.En.ViewsGroup)]
     public bool InvertLook { get; set; }

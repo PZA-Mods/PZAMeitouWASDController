@@ -11,7 +11,7 @@ namespace PZA.WASDControl.Meitou;
 
 public static class Prompts
 {
-    public enum Place { World, Window, Menu, Dial }
+    public enum Place { World, Window, Menu, Dial, Build }
 
     /// <summary>The strip stays this long after the last controller input (ms).</summary>
     public const long ShowMs = 30000;
@@ -41,6 +41,12 @@ public static class Prompts
         ],
         Place.Window => [Strings.Get("prompt.win_a"), Strings.Get("prompt.win_b"), Strings.Get("prompt.win_stick")],
         Place.Menu => [Strings.Get("prompt.menu_choose"), Strings.Get("prompt.menu_pick"), Strings.Get("prompt.menu_close")],
+        Place.Build =>
+        [
+            Strings.Get("prompt.build_a"), Strings.Get("prompt.build_rotate"), Strings.Get("prompt.build_height"), Strings.Get("prompt.build_confirm"),
+            Strings.Get("prompt.build_undo"), Strings.Get("prompt.build_b"), Strings.Get("prompt.build_floor"), Strings.Get("prompt.build_slope"),
+            Strings.Get("prompt.win_stick"),
+        ],
         _ => [],
     };
 
@@ -48,6 +54,7 @@ public static class Prompts
     public static Place Now(object player) =>
         SquadWheel.IsOpen || ScreenWheel.IsOpen || OrdersDial.IsOpen ? Place.Dial
         : Access.ContextMenuOpen(player) ? Place.Menu
+        : BuildPad.On ? Place.Build
         : Look.WindowOpen(player) ? Place.Window
         : Place.World;
 

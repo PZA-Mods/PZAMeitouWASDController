@@ -46,6 +46,7 @@ public static class PadPointer
         Access.Session(player).Input.SetMousePosition(to.X, to.Y);
         var (w, _) = Access.UiSize(player);
         Access.MovePointer(player, to * (w / size.X));   // the interface's pointer, in its pixels
+        Access.SettingsPanelMove(to);   // Meitou's settings panel, when it is shown (0.10.1)
         Counters.Add("pointer.moved");
     }
 }

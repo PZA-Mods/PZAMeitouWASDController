@@ -105,13 +105,12 @@ public static class Keys
         return Strings.Format("keys.changed", Strings.Get("key." + action.ToString().ToLowerInvariant()), key);
     }
 
-    /// <summary>Look speed (the window's Slow / Normal / Fast) as a factor on the mouse and the right stick.</summary>
-    public static float LookFactor => Driver.Settings.LookSpeed switch
-    {
-        "Slow" => 0.6f,
-        "Fast" => 1.6f,
-        _ => 1f,
-    };
+    /// <summary>Look speed (the slider) as a factor on the mouse and the right stick; anything odd in the settings file is Normal (1).</summary>
+    public static float LookFactor => Look(Driver.Settings.LookScale);
+
+    /// <summary>A look-speed setting made safe: inside the slider's range, 1 when it is not a number.</summary>
+    public static float Look(double scale) =>
+        double.IsFinite(scale) ? (float)Math.Clamp(scale, DcSettings.MinLook, DcSettings.MaxLook) : 1f;
 
     /// <summary>+1, or -1 with Invert look up / down.</summary>
     public static float InvertSign => Driver.Settings.InvertLook ? -1f : 1f;

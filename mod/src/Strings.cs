@@ -21,7 +21,9 @@ public static class Strings
         public const string KeyTakeLabel = "Take-control key";
         public const string KeyHint = "Easier in the window's Keys tab, which refuses keys the game already uses.";
         public const string LookSpeedLabel = "Look speed";
-        public const string LookSpeedHint = "How fast the mouse and the right stick turn the camera in the views.";
+        public const string LookSpeedHint = "How fast the mouse and the right stick turn the camera in the views: 1 is normal, lower is slower (down to 0.1), higher faster (up to 2).";
+        public const string FovLabel = "Over-the-shoulder field of view";
+        public const string FovHint = "How wide the over-the-shoulder view sees, in degrees (the game's camera is 50). Photo mode and PZA's Camera keep their own lens.";
         public const string InvertLabel = "Invert look up / down";
         public const string InvertHint = "Pushing the mouse or stick forward looks down.";
         public const string SideLabel = "Shoulder";
@@ -38,7 +40,7 @@ public static class Strings
         public const string StartOnLabel = "On at start";
         public const string StartOnHint = "WASD & Controller is on when a game starts. V turns it on and off at any time.";
         public const string SteerLabel = "Steer distance";
-        public const string SteerHint = "How far ahead of the character each step points (10 is about a metre).";
+        public const string SteerHint = "How far ahead of the character each step points (10 is about a metre). Longer helps on stairs and round corners; the window's CONTROL tab has Short / Normal / Long / Longer.";
         public const string StopLabel = "Stop on release";
         public const string StopHint = "Letting go of W A S D stops the character at once.";
         public const string FollowLabel = "Camera follows";
@@ -46,7 +48,7 @@ public static class Strings
         public const string PromptsLabel = "Controller prompts";
         public const string PromptsHint = "A line at the top of the screen with what the controller's buttons do right now. Shows while you use the controller.";
         public const string DialTimeLabel = "Time under a dial";
-        public const string DialTimeHint = "Controller dials: Slow runs time at a quarter through PZA's SlowMo (it pauses when SlowMo isn't installed); Pause stops time; Normal leaves it running. Your own pause or speed change always wins.";
+        public const string DialTimeHint = "Controller dials: Slow runs time at a quarter while any dial is open (no other mod needed; with PZA's SlowMo installed it goes through SlowMo so the two stay in step); Pause stops time; Normal leaves it running. Your own pause or speed change always wins.";
     }
 
     static readonly Dictionary<string, string> EnTable = new(StringComparer.Ordinal)
@@ -72,6 +74,14 @@ public static class Strings
         ["prompt.win_a"] = "A: click",
         ["prompt.win_b"] = "B: close",
         ["prompt.win_stick"] = "Right stick: pointer",
+        ["prompt.build_a"] = "A: place",
+        ["prompt.build_rotate"] = "LB / RB: rotate",
+        ["prompt.build_height"] = "D-pad up / down: height",
+        ["prompt.build_slope"] = "D-pad left / right: slope",
+        ["prompt.build_floor"] = "LT + D-pad up / down: floor",
+        ["prompt.build_undo"] = "X: undo",
+        ["prompt.build_confirm"] = "Y: confirm",
+        ["prompt.build_b"] = "B: drop building",
         ["prompt.menu_choose"] = "D-pad / right stick: choose",
         ["prompt.menu_pick"] = "Let go of RT: pick",
         ["prompt.menu_close"] = "B: close",
@@ -114,14 +124,20 @@ public static class Strings
         ["win.view_normal"] = "Normal",
         ["win.view_shoulder"] = "Shoulder",
         ["win.view_first"] = "First person",
-        ["win.look"] = "Look speed (mouse and right stick, in a view)",
-        ["win.slow"] = "Slow",
+        ["win.look"] = "Look speed (mouse, right stick): {0}",
+        ["win.fov"] = "Over-the-shoulder field of view: {0} degrees",
+        ["win.less"] = "-",
+        ["win.more"] = "+",
         ["win.normal"] = "Normal",
-        ["win.fast"] = "Fast",
         ["win.invert"] = "Invert look up / down",
         ["win.side"] = "Over-the-shoulder camera: which shoulder",
         ["win.left"] = "Left",
         ["win.right"] = "Right",
+        ["win.steer"] = "Steer distance: {0} (10 is about a metre)",
+        ["win.steer_short"] = "Short",
+        ["win.steer_normal"] = "Normal",
+        ["win.steer_long"] = "Long",
+        ["win.steer_longer"] = "Longer",
         ["win.dial_time"] = "Time while a controller dial is open",
         ["win.dial_slow"] = "Slow",
         ["win.dial_pause"] = "Pause",
@@ -140,10 +156,10 @@ public static class Strings
         ["key.take"] = "Take control (point at your character)",
         ["tiny.on"] = "WASD ON",
         ["tiny.off"] = "WASD OFF",
-        ["help.1"] = "WASD & Controller steers the first selected character with W A S D, relative to the camera, and the camera follows them. Let go and they stop. Stairs, walls and ledges are followed as when you right-click.",
-        ["help.2"] = "Views: over the shoulder and first person. In a view the mouse looks around, the cursor in the middle is your crosshair: right-click a person for their menu, an object for its action; left-click one of your people to see their info. Hold Alt for a free cursor. Bare ground does nothing: walk with W A S D. While you carry someone the views move out of the way: over the shoulder looks from higher and further back, first person from a little further forward.",
+        ["help.1"] = "WASD & Controller steers the first selected character with W A S D, relative to the camera, and the camera follows them. Let go and they stop. Each step points a few metres ahead along the ground: it climbs stairs and slopes, slides along a wall, column or corner that blocks the way, and stops short of a ledge. The CONTROL tab's Steer distance sets how far ahead (Short 3 m, Normal 4 m, Long 6 m, Longer 8 m; any value on Settings > Mods).",
+        ["help.2"] = "Views: over the shoulder and first person. In a view the mouse looks around, the cursor in the middle is your crosshair: right-click a person for their menu, an object for its action; left-click one of your people to see their info. Hold Alt for a free cursor. Bare ground does nothing: walk with W A S D. While you carry someone the views move out of the way: over the shoulder looks from higher and further back, first person from a little further forward. The CONTROL tab's two sliders (also on Settings > Mods): Look speed, 0.1 to 2 (1 is normal; - and + step by 0.05), and the over-the-shoulder view's field of view, 30 to 100 degrees (the game's camera is 50). Photo mode keeps its own lens, and PZA's Camera's 0.5x lens comes back when you leave the view.",
         ["help.3"] = "Controller: any pad Windows or Steam knows. A Switch Pro controller needs Meitou started through Steam (Steam Input). A pad that presses buttons by itself is ignored, with a line in the log.",
-        ["help.4"] = "Controller dials: hold RB for the squad dial, LB for the screens dial, LB and RB together for the orders dial (Stances: Kenshi's eight orders, lit when on; Tasks: stop, medic, rescue, prospect, put down, clear jobs, rest, select all; the D-pad left / right turns its page). Aim with the right stick, let go to pick; B cancels, and letting go without aiming does nothing. A slice that doesn't apply now is dimmed and stays in its place. If a pick changes nothing in the game, a note says so. While a dial is open time runs at a quarter through PZA's SlowMo (or pauses without it); the main tab's \"Time while a controller dial is open\" picks Slow, Pause or Normal. Your own pause or speed change always wins. While you use the controller, a line at the top of the screen says what its buttons do right now (setting Controller prompts). Tap A on a person, a door or one of your containers: the safe extra option named under the crosshair (talk, trade, first aid, pick up, loot; open, close, lock a door; your own chest's inventory), never an attack, a lockpick or a theft: those stay on hold RT.",
+        ["help.4"] = "Controller dials: hold RB for the squad dial, LB for the screens dial, LB and RB together for the orders dial (Stances: Kenshi's eight orders, lit when on; Tasks: stop, medic, rescue, prospect, put down, clear jobs, rest, select all; the D-pad left / right turns its page). Aim with the right stick, let go to pick; B cancels, and letting go without aiming does nothing. A slice that doesn't apply now is dimmed and stays in its place. If a pick changes nothing in the game, a note says so. While a dial is open time runs at a quarter (no other mod needed; with PZA's SlowMo installed, through SlowMo); the main tab's \"Time while a controller dial is open\" picks Slow, Pause or Normal. Your own pause or speed change always wins. While you use the controller, a line at the top of the screen says what its buttons do right now (setting Controller prompts). Tap A on a person, a door or one of your containers: the safe extra option named under the crosshair (talk, trade, first aid, pick up, loot; open, close, lock a door; your own chest's inventory), never an attack, a lockpick or a theft: those stay on hold RT.",
         ["help.5"] = "The Keys tab changes the mod's keys. X is Meitou's own run speed, Numpad 4 its sneak. PZA's WASD & Controller Support is by PZA, inspired by Direct Control for Kenshi (smokefoolius).",
         ["pad.1"] = "Left stick: move (relative to the camera); light push walk, medium jog, full run",
         ["pad.2"] = "Left stick click (L3): sneak on / off",
@@ -156,6 +172,7 @@ public static class Strings
         ["pad.9"] = "LB / L: tap previous squad member; hold for the screens dial (map, inventory, character, squads, build, crafting, tech, faction; right stick aims, let go to open, B cancels)",
         ["pad.10"] = "RB / R: tap next squad member; hold for the squad wheel (right stick aims, let go to take control; top: everyone; bottom: squad pace; left: follow me; B cancels)",
         ["pad.19"] = "LB + RB together (L + R): hold for the orders dial (stances lit when on; D-pad left / right: the tasks page; right stick aims, let go to pick, B cancels)",
+        ["pad.20"] = "In build mode: A places at the pointer (right stick); LB / RB rotate; D-pad up / down height, left / right slope; LT + D-pad up / down the floor; X undo; Y confirm; B drops the held building (with none held it closes build mode)",
         ["pad.11"] = "LT / ZL (hold): highlight; with RT / ZR: loot / steal; with the right button: stop",
         ["pad.12"] = "RT / ZR: interact (a right click: attacks a hostile, talks to a friend, loots); hold for the menu, aim, let go to pick",
         ["pad.13"] = "LT + right button / ZL + A (Switch): stop",
@@ -193,6 +210,10 @@ public static class Strings
         ["dial.sub_not_now"] = "not now",
         ["dial.not_now"] = "{0}: not now.",
         ["dial.failed"] = "{0} didn't take.",
+        ["log.close_stuck"] = "WASD Control: B: the game's Esc left the screens as they were ({1}); closed '{0}' directly.",
+        ["log.lens_on"] = "WASD Control: over-the-shoulder lens {0:0} degrees (the game's was {1:0.#}).",
+        ["log.lens_back"] = "WASD Control: lens handed back ({0}): {1:0.#} degrees.",
+        ["log.lens_elsewhere"] = "WASD Control: the lens was changed by something else ({0}); left as it is ({1:0.#} degrees).",
         ["log.dial_failed"] = "WASD Control: dial pick {0} changed nothing in the game (dial.<slice>.failed).",
         ["pad.name.LeftBumper"] = "LB",
         ["pad.name.RightBumper"] = "RB",

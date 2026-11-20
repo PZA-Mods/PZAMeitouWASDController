@@ -24,8 +24,11 @@ public static class Views
     /// <summary>Over-the-shoulder: the boom, the height of the look point above the feet and its shift to the right (the plugin's ini
     /// defaults OtsDistance 20, OtsHeight 15, OtsSide 4, in Kenshi's units, which Meitou keeps).</summary>
     public const float ShoulderDistance = 20, ShoulderHeight = 15, ShoulderSide = 4;
-    /// <summary>First person: how far in front of the head bone the eye sits (out of the face), and the tiny boom that puts the eye there.</summary>
-    public const float FaceAhead = 2, FirstBoom = 1;
+    /// <summary>First person: how far in front of the head bone the eye sits (out of the face), and the tiny boom that puts the eye there.
+    /// 0.10.1 (user 2026-11-18: "EVER SO SLIGHTLY a little too far ahead ... when RUNNING in first person, the hands come up and seemingly
+    /// clip through your cam"): 2 -> 1.5, five centimetres back, so the running arms stay in front of the near plane and more of the
+    /// character's own chest shows when looking down.</summary>
+    public const float FaceAhead = 1.5f, FirstBoom = 1;
     /// <summary>
     /// Carrying someone (play test clip 2026-11-17 19:55: the carried body on the shoulder filled half the over-the-shoulder view, and the first
     /// person eye sat inside it for a moment): the shoulder view looks from higher, further back and further out to the side, over the body;
@@ -85,6 +88,7 @@ public static class Views
         if (next == Current) return;
 
         if (Current == View.Normal) Pitch = StartPitch;   // entering a view from the normal camera: look ahead
+        if (next != View.Shoulder) ViewLens.Release("view " + next.ToString().ToLowerInvariant());
         Current = next;
         Counters.Add("view." + next.ToString().ToLowerInvariant());
         string text = Strings.Get("notice.view." + next.ToString().ToLowerInvariant());

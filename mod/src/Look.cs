@@ -54,7 +54,7 @@ public static class Look
     public static bool WindowOpen(object player)
     {
         foreach (var s in Access.OpenScreens(player)) if (CursorWindows.Contains(s)) return true;
-        return false;
+        return Access.SettingsPanelOpen();   // Meitou's settings panel (0.10.1): the pointer, A and B as in a window
     }
 
     /// <summary>GameHost.MouseLook postfix: true while Wanted; an off -> on change asks for the pointer at the centre.</summary>
@@ -116,6 +116,7 @@ public static class Look
     /// </summary>
     public static void Frame(object gameLoop)
     {
+        Access.RememberLoop(gameLoop);
         // Asked here every frame too: Meitou calls GameHost.MouseLook only on a mouse move or while already pinned (GameLoop.PreparePointer
         // short-circuits on a null anchor), so after Z / N the look turned on, pinned and centred only at the first mouse move (play test
         // 2026-11-17: "still relies on player to move the mouse first, then it snaps").

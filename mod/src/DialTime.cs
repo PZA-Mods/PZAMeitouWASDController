@@ -1,8 +1,10 @@
 // PZA's WASD & Controller Support (Meitou). Author: PZA. Licence: GPLv3 or later.
 // Time while a dial is open (0.10, user 2026-11-18: "THIS WORKS WITH SLOWMO MOD IF WE CHOOSE THAT"). Setting "Time under a dial":
-// - Slow (default): time runs at a quarter through PZA's SlowMo for Meitou's hold door (SlowMoApi, found by type name; contract
-//   version 1, the hold contract agreed with SlowMo 0.3.0), so SlowMo's own slow motion, its window and the game's speed buttons stay in step.
-//   Without SlowMo it pauses instead.
+// - Slow (default): time runs at a quarter while any dial is open. 0.10.1 (user 2026-11-18: "when they open any radial menu, time slows",
+//   for everyone, not only with SlowMo): WASD slows the clock itself (Meitou's SimulationClock.SetSpeed takes any speed of 0 or above; photo
+//   mode slows time the same way), as it pauses for Pause. With PZA's SlowMo for Meitou 0.3.0+ loaded it goes through SlowMo's hold door
+//   instead (SlowMoApi, found by type name; contract version 1), so SlowMo's slow motion, its window and the speed buttons stay in step.
+//   Meitou's own speeds are 1 and up (DefaultSpeeds 1, 2, 5; the second 1.5 to 4), so a clock still at 0.25 when the dial closes is ours.
 // - Pause: the game pauses while the dial is open (Meitou's own SaveSpeeds / SetSpeed(0) / RestoreSpeeds).
 // - Normal: time is left alone.
 // Rules as SlowMo's: a game already paused stays paused; if the player changes the speed while a dial is open, theirs stands.
@@ -18,7 +20,7 @@ public static class DialTime
     public const double SlowSpeed = 0.25;
     public static readonly string[] Options = ["Slow", "Pause", "Normal"];
 
-    public enum Mode { None, SlowMo, Paused, Left }
+    public enum Mode { None, SlowMo, Slowed, Paused, Left }
 
     static Mode s_mode;
     static bool s_saved;
@@ -54,13 +56,18 @@ public static class DialTime
         s_saved = false;
         if (setting == "Normal") { s_mode = Mode.Left; Counters.Add("dial_time.normal"); return; }
         if (setting == "Slow" && SlowMo.Hold(Holder, SlowSpeed)) { s_mode = Mode.SlowMo; Counters.Add("dial_time.slowmo"); return; }
-        if (setting == "Slow") Counters.Add("dial_time.no_slowmo");   // SlowMo missing or refused: pause instead
-        s_mode = Mode.Paused;
-        if (clock.IsPaused || clock.Speed <= 0) { Counters.Add("dial_time.already_paused"); return; }
+        bool slow = setting == "Slow";   // SlowMo missing, old or refused: WASD's own slow motion
+        s_mode = slow ? Mode.Slowed : Mode.Paused;
+        if (clock.IsPaused || clock.Speed <= 0)
+        {
+            s_mode = Mode.Paused;   // a paused game stays paused
+            Counters.Add("dial_time.already_paused");
+            return;
+        }
         s_state = clock.SaveSpeeds();
         s_saved = true;
-        clock.SetSpeed(0);
-        Counters.Add("dial_time.paused");
+        clock.SetSpeed(slow ? SlowSpeed : 0);
+        Counters.Add(slow ? "dial_time.slowed" : "dial_time.paused");
     }
 
     /// <summary>Every dial closed.</summary>
@@ -74,6 +81,10 @@ public static class DialTime
             case Mode.Paused when s_saved && s_clock is { } clock:
                 if (clock.Speed <= 0) { clock.RestoreSpeeds(s_state); Counters.Add("dial_time.restored"); }
                 else Counters.Add("dial_time.changed_outside");   // the player set a speed meanwhile: theirs stands
+                break;
+            case Mode.Slowed when s_saved && s_clock is { } clock:
+                if (clock.Speed == SlowSpeed && !clock.IsPaused) { clock.RestoreSpeeds(s_state); Counters.Add("dial_time.restored"); }
+                else Counters.Add("dial_time.changed_outside");   // the player paused or set a speed meanwhile: theirs stands
                 break;
         }
         s_mode = Mode.None;

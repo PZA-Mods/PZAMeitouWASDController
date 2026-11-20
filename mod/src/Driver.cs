@@ -145,6 +145,13 @@ public static class Driver
         PadR3(session);   // before the menu's early return, so a release is never lost and a look back never sticks
         // LB + RB together (0.10): the Orders dial; while the chord is on, neither bumper's own tap or dial happens.
         bool mayDial = !window && !Access.ContextMenuOpen(Player!);
+        // Build mode (0.10.1): the bumpers rotate, the D-pad sets height and slope (LT + D-pad: the floor), X undoes, Y confirms (BuildPad)
+        if (BuildPad.Step(Player!, pad))
+        {
+            PadClicks();
+            PadControlTick(rig, state);
+            return;
+        }
         if (OrdersDial.Chord.Step(Dial.Clock(), pad.Down(PadButton.LeftBumper), pad.Down(PadButton.RightBumper), Pad.WasPressed(PadButton.LeftBumper),
                 Pad.WasPressed(PadButton.RightBumper), mayDial && !SquadWheel.IsOpen && !ScreenWheel.IsOpen))
         {
@@ -200,8 +207,21 @@ public static class Driver
     {
         // B (the right face button) closes a game window, as Esc does (play test 2026-11-17: "once I'm done with the trade pressing like, B or
         // something intuitive doesn't close it out"): trade and loot close with the inventories, else the top window. Its release is the close's.
-        if (Pad.WasPressed(PadButton.East) && Look.WindowOpen(Player!))
+        CheckStuckClose();
+        bool panel = Access.SettingsPanelOpen();
+        if (Pad.WasPressed(PadButton.East) && !panel && BuildPad.Drop(Player!))
         {
+            s_eastClosed = true;   // build mode: B drops the held building (as the right click's Clear Building); with none held B is Esc below
+        }
+        else if (Pad.WasPressed(PadButton.East) && panel && Access.SettingsPanelEscape())
+        {
+            s_eastClosed = true;   // the panel's Esc, as the keyboard's (a choice or search first, else it closes); not the game menu under it
+            Counters.Add("pad.close_settings");
+        }
+        else if (Pad.WasPressed(PadButton.East) && Look.WindowOpen(Player!))
+        {
+            s_closeBefore = [.. Access.OpenScreens(Player!)];
+            s_closeAt = Dial.Clock();
             Access.Escape(Player!);
             s_eastClosed = true;
             Counters.Add("pad.close_window");
@@ -209,8 +229,18 @@ public static class Driver
         // A is the left button while a game window is open (pick up, drop, buy, sell); otherwise free (0.9.21).
         if (Look.WindowOpen(Player!) || s_aDown)
         {
-            if (Pad.WasPressed(PadButton.South)) { Click(MouseButton.Left, true); s_aDown = true; }
-            if (Pad.WasReleased(PadButton.South) && s_aDown) { Click(MouseButton.Left, false); s_aDown = false; }
+            if (Pad.WasPressed(PadButton.South))
+            {
+                s_aThroughLoop = panel && Access.LoopClick(MouseButton.Left, true);   // the settings panel takes the mouse from the game loop
+                if (!s_aThroughLoop) Click(MouseButton.Left, true);
+                else Counters.Add("pad.click_settings");
+                s_aDown = true;
+            }
+            if (Pad.WasReleased(PadButton.South) && s_aDown)
+            {
+                if (!(s_aThroughLoop && Access.LoopClick(MouseButton.Left, false))) Click(MouseButton.Left, false);
+                s_aDown = false;
+            }
         }
         foreach (var (button, mouse) in PadMouse)
         {
@@ -226,6 +256,8 @@ public static class Driver
 
     /// <summary>A went down as the left button in a window: its release is the button's too, even if the window closed meanwhile.</summary>
     static bool s_aDown;
+    /// <summary>That press went through the game loop (Meitou's settings panel), so its release does too.</summary>
+    static bool s_aThroughLoop;
     /// <summary>A dial, menu or window had the right stick last tick; after it closes the stick looks again only once back under <see cref="StickCentre"/>.</summary>
     static bool s_menuWasOpen, s_waitStickCentre;
     public const float StickCentre = 0.2f;
@@ -241,6 +273,29 @@ public static class Driver
 
     /// <summary>The B press closed a window: neither its press nor its release is a click.</summary>
     static bool s_eastClosed;
+
+    // 0.10.1 (play test 2026-11-18: caught stealing from a container, then arrested, the loot window stayed open "no matter how many times I
+    // tried to press B"; the log shows four closes, each the game's own Esc, PlayerInterface.EscapeKey, which left it open). A moment after
+    // B, if exactly the same screens are still open, the top one is closed directly, as its own close button does, with a log line naming it.
+    static long s_closeAt = -1;
+    static string[] s_closeBefore = [];
+    public const long CloseCheckMs = 250;
+
+    /// <summary>The screen to close when the game's Esc left the screens as they were (null: Esc worked, or nothing is open).</summary>
+    public static string? StuckScreen(IReadOnlyList<string> before, IReadOnlyList<string> after) =>
+        after.Count > 0 && after.SequenceEqual(before) ? after[^1] : null;
+
+    static void CheckStuckClose()
+    {
+        if (s_closeAt < 0 || Dial.Clock() - s_closeAt < CloseCheckMs) return;
+        s_closeAt = -1;
+        var after = Access.OpenScreens(Player!);
+        if (StuckScreen(s_closeBefore, after) is not { } id) return;
+        Counters.Add("pad.close_stuck");
+        Log.Line(Strings.Format("log.close_stuck", id, string.Join(", ", after)));
+        try { Access.CloseScreen(Player!, id); }
+        catch (Exception e) { Log.Exception("close stuck screen", e); }
+    }
 
     static readonly (PadButton Button, MouseButton Mouse)[] PadMouse =
         [(PadButton.RightTrigger, MouseButton.Right), (PadButton.East, MouseButton.Left)];   // ZR interact (0.9.19; was A), B select
@@ -450,10 +505,13 @@ public static class Driver
 
     static void PadControlTick(global::Meitou.Game.Host.Cameras.StrategyCamera rig, ActionState state)
     {
-        if (Pad.WasPressed(PadButton.DPadUp)) rig.Zoom(1);
-        if (Pad.WasPressed(PadButton.DPadDown)) rig.Zoom(-1);
-        if (Pad.WasPressed(PadButton.DPadLeft)) Press(state, InputAction.TimeSlower);
-        if (Pad.WasPressed(PadButton.DPadRight)) Press(state, InputAction.TimeFaster);
+        if (!BuildPad.On)   // in build mode the D-pad is height, slope and floor (BuildPad)
+        {
+            if (Pad.WasPressed(PadButton.DPadUp)) rig.Zoom(1);
+            if (Pad.WasPressed(PadButton.DPadDown)) rig.Zoom(-1);
+            if (Pad.WasPressed(PadButton.DPadLeft)) Press(state, InputAction.TimeSlower);
+            if (Pad.WasPressed(PadButton.DPadRight)) Press(state, InputAction.TimeFaster);
+        }
         // Menu / +: a tap pauses (on its release); held MenuHoldMs it opens the game's Esc menu instead (the user, 2026-11-17: "if you HOLD
         // the Pause button for like 2-3 seconds, it will bring up the Escape menu").
         long now = Environment.TickCount64;
@@ -488,6 +546,7 @@ public static class Driver
         On = !On;
         Counters.Add(On ? "toggle.on" : "toggle.off");
         if (!On) StopIfMoving(Player is null ? null : Access.Session(Player), "toggle off");
+        if (!On) ViewLens.Release("off");
         if (!On) Views.Current = View.Normal;   // the views belong to WASD Control: off gives the camera back whole
         s_controlled = null;
         string line = Strings.Format(On ? "log.on" : "log.off", from);
@@ -521,6 +580,8 @@ public static class Driver
 
     public static void OnFrame(object host)
     {
+        ViewLens.FreeCamera = Player is not null && Access.Session(Player).Camera.IsFree;
+        if (!On || Views.Current != View.Shoulder) ViewLens.Release("not over the shoulder");
         if (!On || Views.Current == View.Normal || Player is null) return;
 
         var session = Access.Session(Player);
@@ -532,11 +593,13 @@ public static class Driver
 
         if (s_controlled is not { } id || session.CurrentSnapshot.Characters.FirstOrDefault(c => c.Id == id) is not { } lead)
         {
+            ViewLens.Release("no character");
             Counters.Add("view.skip_no_character");
             return;
         }
 
         var camera = Access.HostCamera(host);
+        if (Views.Current == View.Shoulder) ViewLens.Frame(camera);
         var feet = Access.DrawnPosition(host, Access.Tracked(host, lead));
         Vector3? head = Views.Current == View.First ? Access.DrawnHead(Player, id) : null;
         if (Views.Current == View.First && head is null) Counters.Add("view.head_fallback");
@@ -629,7 +692,7 @@ public static class Driver
         var right = new Vector2(MathF.Cos(yaw), -MathF.Sin(yaw));
         var dir = Vector2.Normalize(forward * s_intent.Y + right * s_intent.X);
         float reach = Math.Clamp(Settings.SteerDistance, DcSettings.MinSteer, DcSettings.MaxSteer);
-        var target = PlanTarget(lead.Position, dir, reach, Access.SurfaceBelow(Player!), out string how);
+        var target = PlanStep(lead.Position, dir, reach, Access.SurfaceBelow(Player!), out string how);
         Counters.Add("surface." + how);
         if (how == "edge")
         {
@@ -647,8 +710,27 @@ public static class Driver
     /// walker's radius on both sides, is wider, so no sample steps over one; play test 2026-11-17: at half a metre the last sample before a
     /// ledge could sit past its lip and the walker ran off it).</summary>
     public const float SampleStep = 2.5f;
-    /// <summary>Most a walkable surface may rise or fall between two samples (1.5 per unit: steeper than the game's stairs, short of a wall).</summary>
+    /// <summary>Most a walkable surface may fall between two samples (1.5 per unit: steeper than the game's stairs, short of a ledge).</summary>
     public const float MaxRisePerSample = 3.75f;
+    /// <summary>
+    /// Most it may RISE between two samples (0.10.1, Workshop comment 2026-11-18: "the character gets stuck on stairs ... and inclines"): a
+    /// stair's riser can stand taller than 1.5 per unit over a quarter metre, and a rise never carries the walker over a lip, so going up
+    /// is allowed more than going down (the drop rule above stays as it was).
+    /// </summary>
+    public const float MaxStepUpPerSample = 5.5f;
+    /// <summary>
+    /// Most the surface may fall between two samples while the walker is already going down a stair (0.10.1, headless run 2026-11-19: The Hub's
+    /// tower stairs step down 0.66 m within one sample near their foot, then a 25 cm strip with no surface before the ground, and a walk down
+    /// them stopped halfway). A fall over MaxRisePerSample is taken only when the sample before it fell at least StairDescent (on flat ground
+    /// a 0.75 m curb still stops the walker), and never over 0.75 m (a ledge stops as before).
+    /// </summary>
+    public const float StairDropPerSample = 7.5f;
+    /// <summary>The least fall of the sample before (10 cm over 25 cm) that counts as going down a stair.</summary>
+    public const float StairDescent = 1f;
+    /// <summary>The angles (degrees, each side) a blocked step tries next, in order (0.10.1: slide along walls, columns and corners).</summary>
+    public static readonly float[] SlideAngles = [20f, 40f];
+    /// <summary>A step blocked closer than this share of its reach tries the slide angles.</summary>
+    public const float SlideIfShorterThan = 0.6f;
     /// <summary>How far short of a drop's lip a step aims (75 cm: a run stops in under a metre at Meitou's braking).</summary>
     public const float DropMargin = 7.5f;
 
@@ -659,8 +741,47 @@ public static class Driver
     /// surface (the host's SurfaceBelow: the navmesh's highest surface not above a probe) and stop at a jump (a ledge) or a gap (a wall), so the
     /// target never lies past a step the character could not walk. <paramref name="how"/>: climb / flat / stopped / edge (no step at all) / no_surface.
     /// </summary>
-    public static Vector3 PlanTarget(Vector3 start, Vector2 dir, float reach, Func<Vector3, float?>? surface, out string how)
+    public static Vector3 PlanTarget(Vector3 start, Vector2 dir, float reach, Func<Vector3, float?>? surface, out string how) =>
+        PlanTarget(start, dir, reach, surface, out how, out _);
+
+    /// <summary>
+    /// The step the stick or W A S D asks for (0.10.1): the straight step (PlanTarget), unless it is blocked close by something that is not a
+    /// drop (a wall, a column, a furniture corner: a gap in the walkable surface, or a rise too steep). Then the same reach angled 20 and 40
+    /// degrees to each side, nearer angles first, and the one that gets furthest wins ("slide"), so the walker glides along a wall or round a
+    /// corner instead of standing at it. A step stopped by a drop never slides: at a lip the walker stops as before.
+    /// </summary>
+    public static Vector3 PlanStep(Vector3 start, Vector2 dir, float reach, Func<Vector3, float?>? surface, out string how)
     {
+        var straight = PlanTarget(start, dir, reach, surface, out how, out bool drop);
+        if (surface is null || drop || how is "flat" or "climb" or "no_surface") return straight;
+        float got = how == "edge" ? 0 : Flat(straight - start);
+        if (got >= reach * SlideIfShorterThan) return straight;
+
+        Vector3 best = straight;
+        float bestGot = got;
+        foreach (float deg in SlideAngles)
+        {
+            foreach (int side in new[] { 1, -1 })
+            {
+                float a = side * deg * MathF.PI / 180f, c = MathF.Cos(a), sn = MathF.Sin(a);
+                var turned = new Vector2(dir.X * c - dir.Y * sn, dir.X * sn + dir.Y * c);
+                var p = PlanTarget(start, turned, reach, surface, out string h, out bool d);
+                if (h is "edge" or "no_surface") continue;
+                float g = Flat(p - start);
+                if (g > bestGot + SampleStep) { best = p; bestGot = g; }
+            }
+            if (bestGot >= reach * SlideIfShorterThan) break;   // nearer angles first: take the smallest turn that frees the step
+        }
+        if (bestGot > got) how = "slide";
+        return best;
+    }
+
+    static float Flat(Vector3 v) => MathF.Sqrt(v.X * v.X + v.Z * v.Z);
+
+    /// <summary>PlanTarget, also saying whether the step stopped at a drop (a ledge) rather than at a wall or a too-steep rise.</summary>
+    public static Vector3 PlanTarget(Vector3 start, Vector2 dir, float reach, Func<Vector3, float?>? surface, out string how, out bool dropped)
+    {
+        dropped = false;
         var flat = start + new Vector3(dir.X, 0, dir.Y) * reach;
         if (surface is null)
         {
@@ -673,22 +794,42 @@ public static class Driver
         var walked = new List<Vector3>();
         bool drop = false;
         how = "flat";
+        // how far the surface fell into the last sample; for the first, the sample behind the walker (already on the way down a stair)
+        var behind = start - new Vector3(dir.X, 0, dir.Y) * SampleStep;
+        float fell = surface(new Vector3(behind.X, start.Y + MaxStepUpPerSample, behind.Z)) is { } hb ? hb - start.Y : 0;
         for (float d = SampleStep; d <= reach + 0.01f; d += SampleStep)
         {
             var q = start + new Vector3(dir.X, 0, dir.Y) * d;
-            if (surface(new Vector3(q.X, y + MaxRisePerSample, q.Z)) is not { } h)
+            if (surface(new Vector3(q.X, y + MaxStepUpPerSample, q.Z)) is not { } h)
             {
+                // Going down a stair, one sample with no surface and lower ground right after it (the strip between a stair's mesh and the
+                // ground's): stepped over. A wall's gap (the wall plus the walker's radius on both sides) is wider than one sample.
+                var q2 = start + new Vector3(dir.X, 0, dir.Y) * (d + SampleStep);
+                if (fell >= StairDescent && d + SampleStep <= reach + 0.01f
+                    && surface(new Vector3(q2.X, y + MaxStepUpPerSample, q2.Z)) is { } h2 && h2 < y && y - h2 <= MaxRisePerSample + StairDropPerSample)
+                {
+                    Counters.Add("step.stair_gap");
+                    fell = y - h2;
+                    y = h2;
+                    last = new Vector3(q2.X, h2, q2.Z);
+                    walked.Add(last.Value);
+                    d += SampleStep;
+                    continue;
+                }
                 how = last is null ? "no_surface" : "stopped";
                 break;
             }
 
-            if (MathF.Abs(h - y) > MaxRisePerSample)
+            bool stairDown = y - h > MaxRisePerSample && y - h <= StairDropPerSample && fell >= StairDescent;
+            if (h - y > MaxStepUpPerSample || (y - h > MaxRisePerSample && !stairDown))
             {
                 how = "stopped";
                 drop = h < y;
                 break;
             }
+            if (stairDown) Counters.Add("step.stair_drop");
 
+            fell = y - h;
             y = h;
             last = new Vector3(q.X, h, q.Z);
             walked.Add(last.Value);
@@ -696,6 +837,7 @@ public static class Driver
 
         // Before a drop, aim DropMargin short of the last walkable sample: Meitou brakes into a target, and a run carried the walker over a lip
         // it was aimed right at. A wall needs no margin (the navmesh already keeps the walker's radius from it).
+        dropped = drop;
         if (drop)
         {
             int keep = walked.Count - (int)MathF.Ceiling(DropMargin / SampleStep);
