@@ -382,8 +382,44 @@ public static class Access
         if (s_drawnHead is null || s_drawnHead.PropertyType != typeof(Func<CharacterId, Vector3?>)) missing.Add("property StealthView.DrawnHead");
     }
 
-    /// <summary>The scenario's host (the FollowCamera postfix's instance's).</summary>
-    public static object? ScenarioHost(object scenario) => s_scenarioHost.GetValue(scenario);
+    /// <summary>The scenario's host (the FollowCamera postfix's instance's); the last one seen is kept for the interface switch.</summary>
+    public static object? ScenarioHost(object scenario) => s_lastHost = s_scenarioHost.GetValue(scenario);
+
+    static object? s_lastHost;
+    static FieldInfo? s_loopHost, s_hostPlayer;
+
+    /// <summary>
+    /// The game's one PlayerInterface, read from the game loop (GameLoop's GameHost, GameHost.Player): it exists from the title on, before the
+    /// world's Steer hands it over (the title menu on the pad, 2026-11-20). Null when this Meitou's fields are not found.
+    /// </summary>
+    public static object? LoopPlayer(object gameLoop)
+    {
+        s_loopHost ??= AccessTools.GetDeclaredFields(gameLoop.GetType()).FirstOrDefault(f => f.FieldType.FullName == "Meitou.Game.GameHost");
+        if (s_loopHost?.GetValue(gameLoop) is not { } host) return null;
+        s_hostPlayer ??= AccessTools.Field(host.GetType(), "Player");
+        return s_hostPlayer?.GetValue(host) is { } p && p.GetType() == PlayerInterface ? p : null;
+    }
+    static FieldInfo? s_agentChannel, s_interfaceHidden;
+
+    /// <summary>Meitou's "interface hidden" (GameHost.AgentChannel.InterfaceHidden, what F7 flips, GameLoop.InterfaceKey); null when it cannot be read.</summary>
+    public static bool? InterfaceHidden => HiddenField() is { } f && s_lastHost is { } h && s_agentChannel!.GetValue(h) is { } ch ? (bool?)f.GetValue(ch) : null;
+
+    /// <summary>Hides or shows the interface as F7 does; false when this Meitou has no such switch.</summary>
+    public static bool SetInterfaceHidden(bool hidden)
+    {
+        if (HiddenField() is not { } f || s_lastHost is not { } h || s_agentChannel!.GetValue(h) is not { } ch) return false;
+        f.SetValue(ch, hidden);
+        return true;
+    }
+
+    static FieldInfo? HiddenField()
+    {
+        if (s_interfaceHidden is not null) return s_interfaceHidden;
+        if (s_lastHost is null) return null;
+        s_agentChannel ??= AccessTools.Field(s_lastHost.GetType(), "AgentChannel");
+        s_interfaceHidden = s_agentChannel is null ? null : AccessTools.Field(s_agentChannel.FieldType, "InterfaceHidden");
+        return s_interfaceHidden is { } f && f.FieldType == typeof(bool) ? f : s_interfaceHidden = null;
+    }
 
     public static WorldCamera HostCamera(object host) => (WorldCamera)s_hostCamera.GetValue(host)!;
 

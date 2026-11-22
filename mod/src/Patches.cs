@@ -100,6 +100,7 @@ public static class Patches
     {
         try
         {
+            Driver.Player ??= Access.LoopPlayer(__instance);   // the title has the player interface before any world (2026-11-20)
             Look.Frame(__instance);
             PadPointer.Frame(__instance);   // the controller's pointer in game windows
         }

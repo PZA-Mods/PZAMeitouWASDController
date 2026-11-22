@@ -50,10 +50,37 @@ public static class Look
         "tutorials", "editor", "stats", "file",
     ];
 
+    /// <summary>
+    /// Meitou's front end (user 2026-11-20: "make WASDCTRL work at Meitou's title menu"; FrontendScreens.CloseFrontend's ids). The title, new
+    /// game and import screens are front end only; load, save, the menu, files, messages and the editor are when no player character is in
+    /// the world (in a game they are the Esc menu's, and the in-game pad keeps them).
+    /// </summary>
+    static readonly HashSet<string> FrontendOnly = ["title", "new-game", "import"], FrontendShared = ["menu", "save", "load", "message", "editor", "file"];
+
+    /// <summary>Whether the pad works the front end now (pure: the offline check and the fuzzer drive it).</summary>
+    public static bool Frontend(IEnumerable<string> open, bool playerInWorld)
+    {
+        foreach (var s in open)
+        {
+            if (FrontendOnly.Contains(s)) return true;
+            if (!playerInWorld && FrontendShared.Contains(s)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// A screen the pad works as a window (the pointer on the right stick, A / B as the mouse buttons, no zoom or view switch): the game's
+    /// CursorWindows, and every PZA window (PZA's Meitou UI opens them on the game's own screen host as "pza.&lt;mod&gt;"; play test 2026-11-20 at
+    /// PZA's Cat Crawlers table: "when that menu comes up I can't use my controller (d-pad, etc) on that menu").
+    /// </summary>
+    public static bool IsCursorWindow(string? id) =>
+        id is not null && (CursorWindows.Contains(id) || id.StartsWith("pza.", StringComparison.Ordinal));
+
     /// <summary>One of <see cref="CursorWindows"/> is open.</summary>
     public static bool WindowOpen(object player)
     {
-        foreach (var s in Access.OpenScreens(player)) if (CursorWindows.Contains(s)) return true;
+        if (Driver.FrontendNow) return true;   // the title menu and its screens: A and B as in a window (Driver.FrontendPad)
+        foreach (var s in Access.OpenScreens(player)) if (IsCursorWindow(s)) return true;
         return Access.SettingsPanelOpen();   // Meitou's settings panel (0.10.1): the pointer, A and B as in a window
     }
 

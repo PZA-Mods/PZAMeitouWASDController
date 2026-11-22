@@ -1,4 +1,4 @@
-# PZA's WASD & Controller Support for Meitou (beta 0.10.1)
+# PZA's WASD & Controller Support for Meitou (beta 0.11.0)
 
 Play Meitou like a third-person game: steer your character yourself with **W A S D** or a **game controller** (Xbox, PlayStation,
 Switch Pro and others), the camera following, with an over-the-shoulder view and a first-person view. Press **V** (or the pad's View / -
@@ -10,14 +10,25 @@ button) to switch it on and off; while it is off, Meitou plays as usual.
 
 ![PZA's WASD & Controller Support: the controller layout](media/controller-layout.png)
 
-## New in 0.10.1
-- **Sliders for look speed and the over-the-shoulder field of view**, on Settings > Mods and in the mod's window.
-- **Dials slow time on their own.** PZA's SlowMo for Meitou is no longer needed for it.
-- **The controller in Meitou's settings panel** (A clicks, B closes it) **and in build mode** (rotate, height, slope, floor, undo, place).
-- **Better steps:** walks down tall stairs with a gap at their foot, and slides past columns, walls and corners instead of stopping.
-- **B closes a window** even when the game's own Esc leaves it open.
-- **Fixed on Meitou 0.21 and newer:** the window's lists and Help pages, and the build window's buttons (the 0.10.0 known problem).
-- Loads on Meitou 0.20.1 and newer (no upper limit; checked on 0.20.1, 0.21.0 and 0.22.1).
+## New in 0.11.0
+- **[BETA] Jump:** Shift+U, or A with nothing under the crosshair. A hop from standing; walk and run jumps on the move. On / off in Settings > Mods.
+- **[BETA] Ledges: Fall** (off by default): push on at a drop and you tumble over it as a ragdoll; jump at a drop to leap off. Legs are hurt
+  by how hard you land. **R3 during a jump:** dive.
+- **[BETA] Leap:** jump at a small gap, lip or low step and you leap across onto the ground beyond.
+- D-pad left at normal speed: slow motion (PZA's SlowMo if installed, else 0.30x).
+- The controller in the **title, Esc, save and load menus** (D-pad moves, A presses; an on-screen keyboard types save names) and in
+  **conversations** and PZA's windows (D-pad picks, A says).
+- First-person field of view slider; HIDE UI on the screens dial (menus still show).
+- With PZA's Director's Kit: flick the right stick to step its locked camera a quadrant; its kill-cam shots take over the WASD views cleanly
+  and hand back.
+- Fixed on Meitou 0.22: L3 sneak and two orders-dial tasks pressed the wrong game action.
+- No steering in cages and beds; a way out when stuck on rough ground.
+- Window places and rebound keys now stay after a restart; loading a save or starting a new game no longer carries the last game's steering,
+  slow motion or view over.
+- **Weapon swapping:** the Orders dial's **third page is for swapping weapons** (AUTO = the game's pick, HIP weapon, FISTS). Fixed: a dial
+  could stay stuck open.
+
+**The jump, ledge-fall and dive features are BETA** and will likely be split off later into separate frameworks other mods can build on.
 
 ## In action
 
@@ -89,13 +100,13 @@ log line says what is missing.
 
 ## Install
 - **Workshop:** subscribe, then tick **PZAWASDControlMeitou** in Meitou's mod list.
-- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.10.1-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
+- **By hand (GitHub):** unpack `PZAWASDControl.Meitou-0.11.0-beta.zip` into Kenshi's folder (`Kenshi\mods\PZAWASDControl\`), then tick
   **PZAWASDControl** in Meitou's mod list.
 - No items or world data; load order doesn't matter. Safe to remove at any time.
 
 ## This is a beta
 The basics (walking, stairs, the views, the controller, ZR, the squad and screens dials, "Follow me!") were played a lot. **This build
-(0.10.1) passed its offline checks on Meitou 0.20.1, 0.21.0 and 0.22.1 and its fuzz tests; its newest parts are not played much yet:** the
+(0.11.0) passed its offline checks on Meitou 0.20.1, 0.21.0 and 0.22.1, its fuzz tests and headless runs on 0.22.1; its newest parts are not played much yet:** the
 orders dial on LB + RB, A's safe action, time slowing under a dial, the line of prompts at the top, and the checks after each pick. Tell us
 how they feel.
 

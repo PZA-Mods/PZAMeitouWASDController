@@ -36,6 +36,9 @@ $stage = Join-Path $here "out\PZAWASDControl"
 New-Item -ItemType Directory -Force $stage | Out-Null
 Copy-Item (Join-Path $bin.FullName "PZAWASDControl.dll") $stage -Force
 Copy-Item (Join-Path $here "meitou.json") $stage -Force
+# the languages (0.10.2: the ledge texts so far), read by PZA's Meitou UI's loader from lang\meitou.<code>.txt
+New-Item -ItemType Directory -Force (Join-Path $stage "lang") | Out-Null
+Copy-Item (Join-Path $here "lang\meitou.*.txt") (Join-Path $stage "lang") -Force
 
 # The data mod Meitou lists the folder by (mods\<Name>\<Name>.mod): an FCS mod file with no records, author PZA (same layout as LEAFMeitou's).
 function Write-FcsString([System.IO.BinaryWriter]$w, [string]$s) {
@@ -51,11 +54,21 @@ try {
     $w.Write([int]0); $w.Write([int]0)
 } finally { $w.Close() }
 
+# The jump (0.11.0): mod\jumpdata (git-ignored: the two .skeleton files carry Kenshi's bone chunks) holds the jump records
+# (PZA's kmod tool, `kmod jump`) and the Motion Lab's files; with them the staged data mod carries the jump. Without them the jump stays off.
+$jump = Join-Path $here "jumpdata"
+if (Test-Path (Join-Path $jump "PZAWASDControl.mod")) {
+    Copy-Item (Join-Path $jump "PZAWASDControl.mod") $stage -Force
+    foreach ($s in "pza_jumps_male.skeleton", "pza_jumps_female.skeleton") {
+        if (Test-Path (Join-Path $jump $s)) { Copy-Item (Join-Path $jump $s) $stage -Force } else { Write-Warning "jumpdata: $s missing" }
+    }
+}
+
 Write-Host "staged $stage :"
 Get-ChildItem $stage | ForEach-Object { Write-Host ("  {0,-22} {1,8} bytes" -f $_.Name, $_.Length) }
 
 if ($Check -or $Fuzz) {
-    $rt = Join-Path $here "out\checkrt"
+    $rt = Join-Path $here ("out\checkrt-" + (Split-Path $MeitouDir -Leaf))
     New-Item -ItemType Directory -Force $rt | Out-Null
     # The runtime and Meitou assemblies the checker needs, copied from the release (nothing in the release is changed).
     $patterns = "System*.dll", "Microsoft.*.dll", "mscorlib.dll", "netstandard.dll", "WindowsBase.dll", "coreclr.dll", "clrjit.dll",

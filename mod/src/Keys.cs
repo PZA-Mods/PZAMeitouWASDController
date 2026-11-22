@@ -90,11 +90,41 @@ public static class Keys
             if (other != action && Of(other) == key) return Strings.Format("keys.refused_ours", key, Strings.Get("key." + other.ToString().ToLowerInvariant()));
         }
 
-        foreach (var a in Enum.GetValues<InputAction>())
+        foreach (var a in AllActions(bindings))
         {
-            if (bindings.Get(a).Any(b => !b.IsMouse && b.Key == key)) return Strings.Format("keys.refused_game", key, a);
+            if (bindings.Get(a).Any(b => !b.IsMouse && b.Key == key)) return Strings.Format("keys.refused_game", key, ActionName(bindings, a));
         }
         return null;
+    }
+
+    static System.Reflection.PropertyInfo? s_actions, s_label;
+    static System.Reflection.MethodInfo? s_modAction;
+    static bool s_looked;
+
+    /// <summary>Every action the bindings know: the game's and, where Meitou has them (InputBindings.Actions, newer than 0.20.1), other mods'
+    /// AddKeyAction actions (numbers from 1000), so a key another mod uses is refused too.</summary>
+    public static IEnumerable<InputAction> AllActions(InputBindings bindings)
+    {
+        Look();
+        return s_actions?.GetValue(bindings) as IEnumerable<InputAction> ?? Enum.GetValues<InputAction>();
+    }
+
+    /// <summary>The name to show: another mod's action by its label, the game's by its own name.</summary>
+    static string ActionName(InputBindings bindings, InputAction a)
+    {
+        Look();
+        if ((int)a < 1000 || s_modAction is null) return a.ToString();
+        try { return s_modAction.Invoke(bindings, [a]) is { } mod && s_label?.GetValue(mod) is string label ? label : a.ToString(); }
+        catch { return a.ToString(); }
+    }
+
+    static void Look()
+    {
+        if (s_looked) return;
+        s_looked = true;
+        s_actions = typeof(InputBindings).GetProperty("Actions");
+        s_modAction = typeof(InputBindings).GetMethod("ModAction", [typeof(InputAction)]);
+        s_label = s_modAction?.ReturnType.GetProperty("Label");
     }
 
     static string Take(KeyAction action, Key key)

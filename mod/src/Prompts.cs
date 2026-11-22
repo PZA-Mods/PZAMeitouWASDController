@@ -76,7 +76,9 @@ public static class Prompts
         var place = Now(player);
         if (place == Place.Dial) return;
         float s = h / 1080f, scale = 0.9f * s, pad = 10 * s;
-        string line = Fit(For(place, SafeExtra.Verb), w - 80 * s, t => o.MeasureText(t, scale));
+        // A with nothing under the crosshair jumps: named as the safe verb would be
+        string? a = SafeExtra.Verb ?? (Driver.JumpOn ? Strings.Get("prompt.jump_verb") : null);
+        string line = Fit(For(place, a), w - 80 * s, t => o.MeasureText(t, scale));
         if (line.Length == 0) return;
         float tw = o.MeasureText(line, scale), x0 = (w - tw) / 2 - pad, x1 = (w + tw) / 2 + pad, y0 = 8 * s, y1 = y0 + 30 * s;
         o.Flush(w, h);

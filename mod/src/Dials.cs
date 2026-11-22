@@ -73,6 +73,7 @@ public sealed class Dial(string id, PadButton[] buttons, string titleKey, Slice[
     public WheelResult Pad(object player, PadState pad, bool mayOpen = true)
     {
         long now = Clock();
+        _fed = now;
         bool held = Held(pad);
         if (held && Buttons.Any(global::PZA.WASDControl.Meitou.Pad.WasPressed)) _since = mayOpen ? now : -1;   // the press that completes the hold
         bool released = Buttons.Any(global::PZA.WASDControl.Meitou.Pad.WasReleased);
@@ -161,11 +162,14 @@ public sealed class Dial(string id, PadButton[] buttons, string titleKey, Slice[
         if (why is not null) Counters.Add(why);
     }
 
-    /// <summary>Once a frame: shut when WASD Control is off.</summary>
+    /// <summary>Once a frame: shut when WASD Control is off, or when the pad has not reached the dial for FeedMs (DialRules.Unfed).</summary>
     public void EachFrame()
     {
         if (_open && !Driver.On) Close(Id + ".closed_off");
+        else if (DialRules.Unfed(_open, Clock(), _fed)) Close(Id + ".closed_unfed");
     }
+
+    long _fed = long.MinValue;
 
     // ---------------------------------------------------------------- drawing (SquadWheel's helpers and colours)
     internal void Draw(DebugOverlay o, int w, int h, object player)
@@ -216,6 +220,25 @@ public sealed class Dial(string id, PadButton[] buttons, string titleKey, Slice[
         SquadWheel.Centred(o, Strings.Get(cancel), c.X, c.Y + 36 * s, SquadWheel.Faint, 0.85f * s);
         o.Flush(w, h);
     }
+}
+
+/// <summary>
+/// When an open dial lets go (play test 2026-11-20: "LB dial got stuck for some reason I couldn't exit it out"; log: orders.open with no
+/// close, then the dial drawn every frame). Pure: the offline check and the fuzzer drive it.
+/// - The Orders dial has the pad while the LB + RB chord is on OR the dial is open: the chord ends on the tick both bumpers are up, and a
+///   release of both on the same tick never reached the dial (headless run 2026-11-20: open, chord off, open for good).
+/// - Any dial the pad has not reached for FeedMs closes (a conversation, build mode or a pad unplugged takes the pad first): a dial on
+///   screen that nothing can close is worse than one that closes.
+/// </summary>
+public static class DialRules
+{
+    public const long FeedMs = 1000;
+
+    /// <summary>The Orders dial takes this tick's pad.</summary>
+    public static bool OrdersHasPad(bool chordOn, bool dialOpen) => chordOn || dialOpen;
+
+    /// <summary>An open dial the pad last reached at <paramref name="fed"/> (ms) is to close at <paramref name="now"/>.</summary>
+    public static bool Unfed(bool open, long now, long fed) => open && (fed == long.MinValue || now - fed > FeedMs);
 }
 
 /// <summary>

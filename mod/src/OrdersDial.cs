@@ -29,15 +29,48 @@ public static class OrdersDial
         new("task.rescue", p => Access.UiAction(p, "rescue")),
         new("task.prospect", p => Access.UiAction(p, "prospect"),
             Expect: p => { bool was = Access.OpenScreens(p).Contains("prospect"); return q => Access.OpenScreens(q).Contains("prospect") != was; }, World: false),
-        new("screen.put_down", _ => Driver.Press(InputAction.PutDown), Available: p => Me(p) is { } me && !me.Carrying.IsNone,
+        new("screen.put_down", _ => Driver.Press(Act.PutDown), Available: p => Me(p) is { } me && !me.Carrying.IsNone,
             Expect: _ => p => Me(p) is not { } me || me.Carrying.IsNone),
         new("screen.clear_jobs", ClearJobs, Available: p => Me(p) is { } me && me.Jobs.Count > 0,
             Expect: _ => p => Me(p) is not { } me || me.Jobs.Count == 0),
-        new("task.rest", _ => Driver.Press(InputAction.Rest)),
-        new("task.select_all", _ => Driver.Press(InputAction.SelectAll)),
+        new("task.rest", _ => Driver.Press(Act.Rest)),
+        new("task.select_all", _ => Driver.Press(Act.SelectAll)),
     ];
 
-    public static readonly Dial Dial = new("orders", [PadButton.LeftBumper, PadButton.RightBumper], "orders.title", [StancePage, TaskPage], ["orders.stances", "orders.tasks"]);
+    /// <summary>
+    /// Weapons page (user 2026-11-20: "Manual weapon switching", on the Orders dial): AUTO (Meitou's own pick: the back weapon whenever the arms
+    /// can hold it), HIP (the hip weapon in its place), FISTS; the chosen one lit, HIP dimmed without a hip weapon (WeaponChoiceSystem).
+    /// </summary>
+    public static readonly Slice[] WeaponPage =
+    [
+        Weapon(WeaponPick.Auto),
+        Weapon(WeaponPick.Hip),
+        Weapon(WeaponPick.Fists),
+    ];
+
+    public static readonly Dial Dial = new("orders", [PadButton.LeftBumper, PadButton.RightBumper], "orders.title", [StancePage, TaskPage, WeaponPage],
+        ["orders.stances", "orders.tasks", "orders.weapons"]);
+
+    static Slice Weapon(WeaponPick pick) => new("weapon." + pick.ToString().ToLowerInvariant(), p => PickWeapon(p, pick),
+        Available: pick == WeaponPick.Hip ? p => Fighter(p)?.HipWeapon is not null : null,
+        State: p => Me(p) is { } me ? WeaponChoiceSystem.Of(me.Id) == pick : null,
+        Expect: _ => p => Me(p) is not { } me || WeaponChoiceSystem.Of(me.Id) == pick);
+
+    static void PickWeapon(object player, WeaponPick pick)
+    {
+        if (Me(player) is not { } me) return;
+        var world = Access.Session(player).World;
+        world.Commands.Enqueue(new WeaponPickCommand(me.Id, pick) { Tick = world.Tick });
+        Counters.Add("weapon.asked");
+    }
+
+    /// <summary>The controlled character's Fighter (its back and hip weapons), or null.</summary>
+    static global::Meitou.Simulation.Combat.Fighter? Fighter(object player)
+    {
+        if (Me(player) is not { } me) return null;
+        var table = Access.Session(player).World.Characters;
+        return table.TryResolveNext(me.Id, out int slot) ? table.Cold(slot)?.Fighter : null;
+    }
 
     /// <summary>LB + RB pressed together (BumperChord).</summary>
     public static readonly BumperChord Chord = new();

@@ -113,6 +113,7 @@ public static class SquadWheel
     public static WheelResult Pad(object player, PadState pad, CharacterId? controlled)
     {
         long now = Environment.TickCount64;
+        s_fed = now;
         if (Pressed(PadButton.RightBumper)) s_rbSince = now;
         bool released = global::PZA.WASDControl.Meitou.Pad.WasReleased(PadButton.RightBumper);
 
@@ -240,7 +241,10 @@ public static class SquadWheel
     public static void EachFrame()
     {
         if (s_open && !Driver.On) Close("wheel.closed_off");
+        else if (DialRules.Unfed(s_open, Environment.TickCount64, s_fed)) Close("wheel.closed_unfed");   // the pad went elsewhere (DialRules)
     }
+
+    static long s_fed = long.MinValue;
 
     // ---------------------------------------------------------------- the dial (GameLoop.DrawInterface postfix)
     static FieldInfo? s_loopOverlay, s_uiPainter;
@@ -272,6 +276,13 @@ public static class SquadWheel
             if (s_loopOverlay!.GetValue(__instance) is not DebugOverlay overlay || __args.Length == 0 || __args[0] is not { } size) return;
             var t = size.GetType();
             if (t.GetField("X")?.GetValue(size) is not int w || t.GetField("Y")?.GetValue(size) is not int hgt || w <= 0 || hgt <= 0) return;
+            OnScreenKeyboard.CheckFed();
+            if (OnScreenKeyboard.Open)
+            {
+                OnScreenKeyboard.Draw(overlay, w, hgt);   // the controller keyboard over a menu (MenuNav), on or off
+                Counters.Add("keyboard.drawn");
+                return;
+            }
             if (!s_open && !ScreenWheel.IsOpen && !OrdersDial.IsOpen)
             {
                 if (Driver.On && Driver.Player is { } p)
@@ -424,6 +435,22 @@ public static class SquadWheel
         o.Line(x1, y0, x1, y1, thick, colour);
         o.Line(x1, y1, x0, y1, thick, colour);
         o.Line(x0, y1, x0, y0, thick, colour);
+    }
+
+    /// <summary>A filled rectangle (the controller keyboard's keys).</summary>
+    internal static void Rect(DebugOverlay o, float x, float y, float w, float h, Vector4 colour)
+    {
+        o.Triangle(new(x, y), new(x + w, y), new(x + w, y + h), colour);
+        o.Triangle(new(x, y), new(x + w, y + h), new(x, y + h), colour);
+    }
+
+    /// <summary>A rectangle's outline.</summary>
+    internal static void Frame(DebugOverlay o, float x, float y, float w, float h, float thick, Vector4 colour)
+    {
+        o.Line(x, y, x + w, y, thick, colour);
+        o.Line(x + w, y, x + w, y + h, thick, colour);
+        o.Line(x + w, y + h, x, y + h, thick, colour);
+        o.Line(x, y + h, x, y, thick, colour);
     }
 
     internal static void Centred(DebugOverlay o, string text, float x, float top, Vector4 colour, float scale)

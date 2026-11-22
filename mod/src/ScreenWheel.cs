@@ -15,7 +15,7 @@ namespace PZA.WASDControl.Meitou;
 public static class ScreenWheel
 {
     /// <summary>A screen: its caption key, and how it opens: an interface action, an overview tab, or a game key.</summary>
-    public sealed record Entry(string Key, string? UiAction = null, int Tab = -1, InputAction? Action = null);
+    public sealed record Entry(string Key, string? UiAction = null, int Tab = -1, InputAction? Action = null, bool HideUi = false);
 
     /// <summary>The eight screens, clockwise from the top (fixed: rule 2 of the dial plan).</summary>
     public static readonly Entry[] Entries =
@@ -25,10 +25,13 @@ public static class ScreenWheel
         new("screen.inventory", UiAction: "inventory"),
         new("screen.character", UiAction: "stats"),
         new("screen.squads", Tab: 4),
-        new("screen.build", Action: InputAction.ToggleBuild),
+        new("screen.build", Action: Act.ToggleBuild),
         new("screen.crafting", Tab: 3),
         new("screen.tech", Tab: 2),
         new("screen.faction", Tab: 1),
+        // F7 from the pad (user 2026-11-20: "how can we F7 from the gamepad? ... a context/radial menu"): Meitou's own interface switch
+        // (GameHost.AgentChannel.InterfaceHidden, what F7 flips). The dial hides with the interface, so while it is hidden LB brings it back.
+        new("screen.hide_ui", HideUi: true),
     ];
 
     public static readonly Dial Dial = new("screens", [PadButton.LeftBumper], "screens.title", [[.. Entries.Select(Make)]]);
@@ -47,7 +50,8 @@ public static class ScreenWheel
 
     static void Open(object player, Entry e)
     {
-        if (e.UiAction is { } ui) Access.UiAction(player, ui);
+        if (e.HideUi) Access.SetInterfaceHidden(true);
+        else if (e.UiAction is { } ui) Access.UiAction(player, ui);
         else if (e.Tab >= 0)
         {
             var host = PZA.MeitouUi.Access.FaithfulScreens(player);
@@ -72,6 +76,7 @@ public static class ScreenWheel
     /// <summary>What a pick must change: a tab is showing (or gone, if it was), a window's open state flipped; the build key is unchecked.</summary>
     static Func<object, bool>? ExpectFor(object player, Entry e)
     {
+        if (e.HideUi) return _ => Access.InterfaceHidden == true;
         if (e.Tab >= 0)
         {
             bool was = OverviewOn(player, e.Tab);

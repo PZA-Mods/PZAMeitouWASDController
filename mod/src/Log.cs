@@ -11,14 +11,30 @@ public static class Counters
     static readonly Dictionary<string, long> s_counts = new(StringComparer.Ordinal);
     static readonly Dictionary<string, long> s_reported = new(StringComparer.Ordinal);
 
+    /// <summary>The counters are shared with the tick (TumbleSystem counts on the simulation's thread, 0.10.2 ledge fall).</summary>
+    static readonly object s_lock = new();
+
     /// <summary>One firing of a rule.</summary>
-    public static void Add(string rule) => s_counts[rule] = s_counts.GetValueOrDefault(rule) + 1;
+    public static void Add(string rule) { lock (s_lock) s_counts[rule] = s_counts.GetValueOrDefault(rule) + 1; }
 
     /// <summary>A rule's count so far.</summary>
-    public static long Get(string rule) => s_counts.GetValueOrDefault(rule);
+    public static long Get(string rule) { lock (s_lock) return s_counts.GetValueOrDefault(rule); }
+
+    /// <summary>"rule=total" for every rule starting with <paramref name="prefix"/> (the headless tests' read-out).</summary>
+    public static string Prefixed(string prefix)
+    {
+        lock (s_lock)
+            return string.Join(" ", s_counts.Where(p => p.Key.StartsWith(prefix, StringComparison.Ordinal)).OrderBy(p => p.Key, StringComparer.Ordinal)
+                .Select(p => p.Key + "=" + p.Value));
+    }
 
     /// <summary>"rule=total(+new)" for each rule that fired since the last call; null when none did.</summary>
     public static string? Changes()
+    {
+        lock (s_lock) return ChangesLocked();
+    }
+
+    static string? ChangesLocked()
     {
         var sb = new StringBuilder();
         foreach (var (rule, n) in s_counts.OrderBy(p => p.Key, StringComparer.Ordinal))

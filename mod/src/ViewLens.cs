@@ -10,6 +10,9 @@
 //                    Leaving the view while photo mode is open (fuzz view_lens, seeds 1295403446 and 1273010001: view on, photo on, view off,
 //                    photo off left the lens at the view's for good): the hand-back waits while the free camera has the view, because photo
 //                    mode puts our lens back when it closes; the next frame after that gives the game's back.
+//   Director's Kit   its shots own the camera and lens while CameraApi.Busy (agreed 2026-11-21, after a play test where the view and the
+//   shots            shots wrote the lens every frame): the view Yields for the shot, and the first frame after it writes ours again WITHOUT
+//                    taking the shot's lens as the game's (the Kit leaves the lens alone at hand-back while a WASD view is on).
 //   Anything else    a lens that is not ours when we come to write is the game's new one (kept and given back later); a lens changed while
 //                    ours is not given back over.
 //   Blind spot       a lens set by someone else to exactly ours looks like ours (fuzz seed 361952058: the view at 50, leaving the dev free
@@ -21,7 +24,7 @@ namespace PZA.WASDControl.Meitou;
 
 public static class ViewLens
 {
-    public const float DefaultDeg = 50, MinDeg = 30, MaxDeg = 100;
+    public const float DefaultDeg = 50, MinDeg = 30, MaxDeg = 110;   // 110 (fp-fov): first person goes wider (Action RPG uses 90 vertical)
     public const int SettleFrames = 1;
 
     static WorldCamera? s_cam;
@@ -41,8 +44,8 @@ public static class ViewLens
     /// <summary>The lens last written (NaN when not holding).</summary>
     public static float Ours => s_ours;
 
-    /// <summary>Once a frame while the over-the-shoulder view places the camera: the lens from the setting.</summary>
-    public static void Frame(WorldCamera cam)
+    /// <summary>Once a frame while a view places the camera: the lens from that view's setting (degrees; FieldOfView is the vertical angle).</summary>
+    public static void Frame(WorldCamera cam, double degrees)
     {
         s_cam = cam;
         if (!Holding && s_settle++ < SettleFrames)
@@ -52,18 +55,30 @@ public static class ViewLens
         }
 
         bool first = !Holding;
-        if (first || cam.FieldOfView != s_ours) s_game = cam.FieldOfView;
-        float lens = Lens(Driver.Settings.ShoulderFov);
+        if (s_yielded) s_yielded = false;   // back from a Kit shot: what is on the camera is the shot's lens, not the game's
+        else if (first || cam.FieldOfView != s_ours) s_game = cam.FieldOfView;
+        float lens = Lens(degrees);
         cam.FieldOfView = lens;
         s_ours = lens;
         Counters.Add("lens.frames");
         if (first) Log.Line(Strings.Format("log.lens_on", lens * 180 / MathF.PI, s_game * 180 / MathF.PI));
     }
 
+    static bool s_yielded;
+
+    /// <summary>A Director's Kit shot has the camera this frame: write nothing, and keep the game's lens we know for after it.</summary>
+    public static void Yield()
+    {
+        if (!Holding) return;
+        if (!s_yielded) Counters.Add("lens.yield_shot");
+        s_yielded = true;
+    }
+
     /// <summary>Gives the game's lens back if ours is still on the camera (leaving the view, WASD Control off, no character). Safe to repeat.</summary>
     public static void Release(string why)
     {
         s_settle = 0;
+        s_yielded = false;
         if (!Holding) return;
 
         // photo mode starts from our lens, may change it, and puts ours back when it closes: never hand back under it (a hand-back while its

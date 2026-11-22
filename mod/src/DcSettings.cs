@@ -34,6 +34,16 @@ public sealed class DcSettings
     [Setting(Strings.En.DialTimeLabel, Hint = Strings.En.DialTimeHint, Options = ["Slow", "Pause", "Normal"])]
     public string DialTime { get; set; } = "Slow";
 
+    /// <summary>At a drop's lip a step stops 75 cm short (Stop), or aims at the lip and a push outward tumbles the character over it (Fall:
+    /// LedgeRules, TumbleSystem; legs hurt past 3 m). 0.11.0; OFF (Stop) by default.</summary>
+    [Setting(Strings.En.LedgesLabel, Hint = Strings.En.LedgesHint, Options = ["Stop", "Fall"])]
+    public string Ledges { get; set; } = "Stop";
+
+    /// <summary>The jump (Shift+U, the pad's A with nothing under the crosshair; JumpSystem): On, or Off (no key, A gives the safe action
+    /// only, the clips never play). User 2026-11-20: "both Jump stuff AND the Ledge thing should be toggleable".</summary>
+    [Setting(Strings.En.JumpLabel, Hint = Strings.En.JumpHint, Options = ["On", "Off"])]
+    public string Jump { get; set; } = "On";
+
     /// <summary>The prompt strip at the top of the screen while the controller is in use (Prompts).</summary>
     [Setting(Strings.En.PromptsLabel, Hint = Strings.En.PromptsHint)]
     public bool ShowPrompts { get; set; } = true;
@@ -60,6 +70,10 @@ public sealed class DcSettings
     /// <summary>The over-the-shoulder view's field of view, degrees (Meitou's lens is 50). 0.10.1, the same request: a wider third-person view.</summary>
     [Setting(Strings.En.FovLabel, Hint = Strings.En.FovHint, Min = MinFov, Max = MaxFov, Step = FovStep, SubGroup = Strings.En.ViewsGroup)]
     public double ShoulderFov { get; set; } = ViewLens.DefaultDeg;
+    /// <summary>The first-person view's field of view, degrees (fp-fov, user 2026-11-20 after the Action RPG study: its first person uses 90).
+    /// 50 is the game's lens, so nothing changes until it is moved.</summary>
+    [Setting(Strings.En.FirstFovLabel, Hint = Strings.En.FirstFovHint, Min = MinFov, Max = MaxFov, Step = FovStep, SubGroup = Strings.En.ViewsGroup)]
+    public double FirstFov { get; set; } = ViewLens.DefaultDeg;
     /// <summary>Mouse / stick forward looks down (flight style).</summary>
     [Setting(Strings.En.InvertLabel, Hint = Strings.En.InvertHint, SubGroup = Strings.En.ViewsGroup)]
     public bool InvertLook { get; set; }

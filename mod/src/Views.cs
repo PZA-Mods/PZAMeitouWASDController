@@ -27,8 +27,9 @@ public static class Views
     /// <summary>First person: how far in front of the head bone the eye sits (out of the face), and the tiny boom that puts the eye there.
     /// 0.10.1 (user 2026-11-18: "EVER SO SLIGHTLY a little too far ahead ... when RUNNING in first person, the hands come up and seemingly
     /// clip through your cam"): 2 -> 1.5, five centimetres back, so the running arms stay in front of the near plane and more of the
-    /// character's own chest shows when looking down.</summary>
-    public const float FaceAhead = 1.5f, FirstBoom = 1;
+    /// character's own chest shows when looking down. 0.11.0 (user 2026-11-20: "First Person needs to kinda go back to how we originally had it
+    /// at least with how forward/back the eyes start"; screenshot: from 1.5 the eye sat inside the shoulder and arm): back to the original 2.</summary>
+    public const float FaceAhead = 2, FirstBoom = 1;
     /// <summary>
     /// Carrying someone (play test clip 2026-11-17 19:55: the carried body on the shoulder filled half the over-the-shoulder view, and the first
     /// person eye sat inside it for a moment): the shoulder view looks from higher, further back and further out to the side, over the body;
@@ -82,13 +83,22 @@ public static class Views
         return current;
     }
 
+    /// <summary>A new world: back to the normal camera without a notice (Driver.NewWorld).</summary>
+    public static void Reset()
+    {
+        ViewLens.Release("view reset");
+        Current = View.Normal;
+        Pitch = StartPitch;
+        Counters.Add("view.reset_new_world");
+    }
+
     /// <summary>Applies a change of view: counted, logged, shown on screen.</summary>
     public static void Set(View next, Action<string> notice)
     {
         if (next == Current) return;
 
         if (Current == View.Normal) Pitch = StartPitch;   // entering a view from the normal camera: look ahead
-        if (next != View.Shoulder) ViewLens.Release("view " + next.ToString().ToLowerInvariant());
+        if (next == View.Normal) ViewLens.Release("view normal");
         Current = next;
         Counters.Add("view." + next.ToString().ToLowerInvariant());
         string text = Strings.Get("notice.view." + next.ToString().ToLowerInvariant());
