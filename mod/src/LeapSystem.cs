@@ -16,14 +16,14 @@ public sealed class LeapSystem : ITickSystem
         var table = world.Characters;
         long tick = world.Tick;
         float dt = world.TickSeconds;
-        foreach (var id in JumpSystem.Leapers)
+        foreach (var id in JumpSystem.LeapersOf(world))
         {
             if (!table.TryResolveNext(id, out int slot) || slot < partition.Start || slot >= partition.End) continue;
-            if (JumpSystem.LeapAt(id, tick) is not { } at) continue;
+            if (JumpSystem.LeapAt(world, id, tick) is not { } at) continue;
             ref var n = ref table.Next[slot];
             var was = n.Position;
             if (Vector3.DistanceSquared(was, at) > 0.25f) Counters.Add("leap.pinned");   // something moved it (root motion, a push)
-            var prev = JumpSystem.LeapAt(id, tick - 1) ?? at;
+            var prev = JumpSystem.LeapAt(world, id, tick - 1) ?? at;
             n.Position = at;
             n.Velocity = dt > 0 ? (at - prev) / dt : Vector3.Zero;
             Counters.Add("leap.flight_ticks");

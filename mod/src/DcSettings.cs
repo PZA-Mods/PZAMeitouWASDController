@@ -48,6 +48,11 @@ public sealed class DcSettings
     [Setting(Strings.En.PromptsLabel, Hint = Strings.En.PromptsHint)]
     public bool ShowPrompts { get; set; } = true;
 
+    /// <summary>Manual Combat (third-party mod, when installed): on or off, persisted across restarts (ManualCombatLink).</summary>
+    public bool ManualCombatFound => ManualCombatLink.Available;
+    [Setting(Strings.En.ManualCombatLabel, Hint = Strings.En.ManualCombatHint, VisibleWhen = nameof(ManualCombatFound))]
+    public bool ManualCombat { get; set; } = true;
+
     /// <summary>The keys (the window's Keys tab changes them, refusing keys the game's own controls use). Letters only.</summary>
     public const string Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -62,6 +67,7 @@ public sealed class DcSettings
 
     public const double MinLook = 0.1, MaxLook = 2, LookStep = 0.05;
     public const double MinFov = ViewLens.MinDeg, MaxFov = ViewLens.MaxDeg, FovStep = 1;
+    public const double MinShoulderHeight = 10, MaxShoulderHeight = 28, ShoulderHeightStep = 1;
 
     /// <summary>How fast the mouse and the right stick turn the views, a factor (1 = the old Normal; the old Slow was 0.6, Fast 1.6). 0.10.1:
     /// a slider (Discord 2026-11-18: "even on slow its too fast"), so it goes down to 0.1.</summary>
@@ -74,6 +80,9 @@ public sealed class DcSettings
     /// 50 is the game's lens, so nothing changes until it is moved.</summary>
     [Setting(Strings.En.FirstFovLabel, Hint = Strings.En.FirstFovHint, Min = MinFov, Max = MaxFov, Step = FovStep, SubGroup = Strings.En.ViewsGroup)]
     public double FirstFov { get; set; } = ViewLens.DefaultDeg;
+    /// <summary>Vertical height of the over-the-shoulder camera above the character's feet, world units (default 15 = ~1.5 m).</summary>
+    [Setting(Strings.En.ShoulderHeightLabel, Hint = Strings.En.ShoulderHeightHint, Min = MinShoulderHeight, Max = MaxShoulderHeight, Step = ShoulderHeightStep, SubGroup = Strings.En.ViewsGroup)]
+    public double ShoulderHeight { get; set; } = Views.ShoulderHeight;
     /// <summary>Mouse / stick forward looks down (flight style).</summary>
     [Setting(Strings.En.InvertLabel, Hint = Strings.En.InvertHint, SubGroup = Strings.En.ViewsGroup)]
     public bool InvertLook { get; set; }

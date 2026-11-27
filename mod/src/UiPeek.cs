@@ -21,13 +21,21 @@ public static class UiPeek
         return menuOpen ? PeekAction.None : PeekAction.Hide;
     }
 
+    /// <summary>Photo mode owns InterfaceHidden (forces it true each frame and restores it on Leave): stand down while it is active so UiPeek
+    /// never fights it or hides the HUD when a window closes afterwards.</summary>
+    public static PeekAction Decide(bool hidden, bool menuOpen, bool peeking, bool photoMode) =>
+        photoMode ? PeekAction.None : Decide(hidden, menuOpen, peeking);
+
     static bool s_peeking;
 
+    /// <summary>Clears per-world peeking state (called from Driver.NewWorld).</summary>
+    public static void Reset() => s_peeking = false;
+
     /// <summary>Once a control tick, in the world.</summary>
-    public static void Tick(object player, bool menuOpen)
+    public static void Tick(object player, bool menuOpen, bool photoMode = false)
     {
         if (Access.InterfaceHidden is not { } hidden) return;
-        switch (Decide(hidden, menuOpen, s_peeking))
+        switch (Decide(hidden, menuOpen, s_peeking, photoMode))
         {
             case PeekAction.Show:
                 if (Access.SetInterfaceHidden(false)) { s_peeking = true; Counters.Add("peek.show"); }

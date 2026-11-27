@@ -90,9 +90,9 @@ public static class JumpOverPatch
     /// <summary>Ticks the prefix answered the jump.</summary>
     public static long Fired;
 
-    /// <summary>Whether the jump plays over what Meitou would show (pure: the check and the fuzzer).</summary>
+    /// <summary>Whether the jump plays over what Meitou would show (pure: the check and the fuzzer). Stumbles do not block a player-triggered jump.</summary>
     public static bool JumpWins(bool ownMove, bool rangedPose, bool inCombat, bool carried, bool gettingUp, bool down, bool liveStumble) =>
-        !ownMove && !carried && !gettingUp && !down && !liveStumble && !(rangedPose && inCombat);
+        !ownMove && !carried && !gettingUp && !down && !(rangedPose && inCombat);
 
     public static string Apply(Harmony h)
     {
@@ -115,7 +115,7 @@ public static class JumpOverPatch
         CharacterCold cold, float tickSeconds, ref (int, float) __result)
     {
         long tick = world.Tick;
-        if (JumpSystem.Answer(world, id, tick) is not { } jump || JumpSystem.Combat is not { } combat) return true;
+        if (JumpSystem.Answer(world, id, tick) is not { } jump || JumpSystem.CombatOf(world) is not { } combat) return true;
 
         var s = combat.StateOf(id);
         bool own = combat.Playing(id, tick) is not null;

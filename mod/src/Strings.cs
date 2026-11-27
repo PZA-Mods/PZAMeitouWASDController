@@ -26,6 +26,8 @@ public static class Strings
         public const string FovHint = "How wide the over-the-shoulder view sees, in degrees (the game's camera is 50). Photo mode and PZA's Camera keep their own lens.";
         public const string FirstFovLabel = "First-person field of view";
         public const string FirstFovHint = "How wide the first-person view sees, in degrees (the game's camera is 50; about 90 gives a wide view, good for aiming). Photo mode and PZA's Camera keep their own lens.";
+        public const string ShoulderHeightLabel = "Over-the-shoulder height";
+        public const string ShoulderHeightHint = "Vertical height of the over-the-shoulder camera above your character's feet (default 15, about 1.5 m). Raise it for a higher view or wider FOV.";
         public const string InvertLabel = "Invert look up / down";
         public const string InvertHint = "Pushing the mouse or stick forward looks down.";
         public const string SideLabel = "Shoulder";
@@ -55,6 +57,8 @@ public static class Strings
         public const string LedgesHint = "At the edge of a drop: Stop keeps your character 75 cm short of it (as before). Fall lets them walk to the edge, and pushing on tumbles them over it; a fall of more than 3 m hurts the legs, more the higher it is (a high fall breaks them). Only the character you steer ever falls.";
         public const string DialTimeLabel = "Time under a dial";
         public const string DialTimeHint = "Controller dials: Slow runs time at a quarter while any dial is open (no other mod needed; with PZA's SlowMo installed it goes through SlowMo so the two stay in step); Pause stops time; Normal leaves it running. Your own pause or speed change always wins.";
+        public const string ManualCombatLabel = "Manual combat (ManualCombat mod)";
+        public const string ManualCombatHint = "On: ManualCombat runs while WASD is on, with full controller support in fights (RT attack, LT block, B dodge, R3 target, LT+B leave, LT+X swap). Off: turns ManualCombat off cleanly (for vanilla combat or CATS) and remembers it across restarts.";
     }
 
     static readonly Dictionary<string, string> EnTable = new(StringComparer.Ordinal)
@@ -73,6 +77,8 @@ public static class Strings
         ["setting.fov.hint"] = En.FovHint,
         ["setting.firstfov.label"] = En.FirstFovLabel,
         ["setting.firstfov.hint"] = En.FirstFovHint,
+        ["setting.shoulder_height.label"] = En.ShoulderHeightLabel,
+        ["setting.shoulder_height.hint"] = En.ShoulderHeightHint,
         ["setting.ledges.label"] = En.LedgesLabel,
         ["setting.ledges.hint"] = En.LedgesHint,
         ["win.ledges"] = "At a ledge",
@@ -118,6 +124,15 @@ public static class Strings
         ["prompt.lt"] = "LT: highlight",
         ["prompt.lb"] = "Hold LB: screens",
         ["prompt.rb"] = "Hold RB: squad",
+        ["prompt.fight_rt"] = "RT: attack",
+        ["prompt.fight_lt"] = "LT: block",
+        ["prompt.fight_b"] = "B: dodge",
+        ["prompt.fight_r3"] = "R3: target",
+        ["prompt.fight_leave"] = "LT+B: leave",
+        ["prompt.fight_swap"] = "LT+X: swap",
+        ["win.manual_combat"] = "Manual combat",
+        ["log.manual_combat_linked"] = "WASD Control: ManualCombat linked: persisted ON/OFF toggle and controller fight layer on (RT attack, LT block, B dodge, R3 target, LT+B leave, LT+X swap).",
+        ["log.manual_combat_toggle"] = "WASD Control: ManualCombat {0} ({1}).",
         ["prompt.views"] = "Y / X: views",
         ["prompt.win_a"] = "A: click",
         ["prompt.win_b"] = "B: close",
@@ -175,6 +190,7 @@ public static class Strings
         ["win.look"] = "Look speed (mouse, right stick): {0}",
         ["win.fov"] = "Over-the-shoulder field of view: {0} degrees",
         ["win.fov_first"] = "First-person field of view: {0} degrees",
+        ["win.shoulder_height"] = "Over-the-shoulder height: {0}",
         ["win.less"] = "-",
         ["win.more"] = "+",
         ["win.normal"] = "Normal",
@@ -210,7 +226,7 @@ public static class Strings
         ["help.3"] = "Controller: any pad Windows or Steam knows. A Switch Pro controller needs Meitou started through Steam (Steam Input). A pad that presses buttons by itself is ignored, with a line in the log.",
         ["help.4"] = "Controller dials: hold RB for the squad dial, LB for the screens dial, LB and RB together for the orders dial (Stances: Kenshi's eight orders, lit when on; Tasks: stop, medic, rescue, prospect, put down, clear jobs, rest, select all; Weapons: auto, hip weapon, fists; the D-pad left / right turns its page). Aim with the right stick, let go to pick; B cancels, and letting go without aiming does nothing. A slice that doesn't apply now is dimmed and stays in its place. If a pick changes nothing in the game, a note says so. While a dial is open time runs at a quarter (no other mod needed; with PZA's SlowMo installed, through SlowMo); the main tab's \"Time while a controller dial is open\" picks Slow, Pause or Normal. Your own pause or speed change always wins. While you use the controller, a line at the top of the screen says what its buttons do right now (setting Controller prompts). Tap A on a person, a door or one of your containers: the safe extra option named under the crosshair (talk, trade, first aid, pick up, loot; open, close, lock a door; your own chest's inventory), never an attack, a lockpick or a theft: those stay on hold RT.",
         ["help.6"] = "Ledges (main tab, also Settings > Mods): STOP keeps your character 75 cm short of a drop. FALL lets them walk right to the edge; push on and they tumble over it as a limp body, carried by their run. Only a drop of 1.5 m or more tumbles them, at a ledge or the top of a cliff; steps, stairs and curbs never do. A wall, parapet or railing at the edge stops them: they just stand there. A drop of up to 3 m does nothing; past that each leg takes blunt damage by how fast the body hit, as a fall from that height: 13.5 for every metre past 3 m (about 40 a leg from 6 m, 80 from 9 m, 100 from 10.4 m, at most 150 from 14 m). Rolling down a slope after landing adds nothing. Higher falls hurt the chest and stomach (from 8 m) and the head (from 10 m) as well, and can kill: about 33 m for a 100-HP chest; the Rebirth bridge kills anyone. Jumping toward a drop of 1.5 m or more (within 2.5 m) with FALL on leaps off it: a limp body thrown in an arc, as a fall. A high fall breaks the legs and they crawl until healed. A fall never cuts a leg off; a high one can kill. Only the character you steer ever falls, never anyone else; one fall at a time, 3 s between falls; a fall ends once the body lies on the ground (a body stuck in the air is nudged down, and every fall ends within 20 s), then they get up the game's own way. While they tumble the game counts them as down (enemies may leave them be, a drawn weapon is put away). Off by default. If a Meitou update changes what this needs, FALL shows unavailable and steps stop at ledges as before. Jump (Settings > Mods): ON jumps with Shift+U or the bottom button on nothing; OFF turns the jump off entirely (its animations never play).",
-        ["help.5"] = "The Keys tab changes the mod's keys. X is Meitou's own run speed, Numpad 4 its sneak. Recommended with it: PZA's SlowMo for Meitou (its slow motion, kill cam and window; the D-pad and the dials then go through it). PZA's WASD & Controller Support is by PZA, inspired by Direct Control for Kenshi (smokefoolius).",
+        ["help.5"] = "The Keys tab changes the mod's keys. Shift+U jumps; Shift+F orders the rest of your active squad to follow you (press again to stop following). X is Meitou's own run speed, Numpad 4 its sneak. Recommended with it: PZA's SlowMo for Meitou (its slow motion, kill cam and window; the D-pad and the dials then go through it). PZA's WASD & Controller Support is by PZA, inspired by Direct Control for Kenshi (smokefoolius).",
         ["pad.1"] = "Left stick: move (relative to the camera); light push walk, medium jog, full run",
         ["pad.2"] = "Left stick click (L3): sneak on / off. Right stick click (R3) during a jump: dive (a ragdoll, GTA style)",
         ["pad.3"] = "Right stick: look around / turn the camera",
@@ -256,6 +272,10 @@ public static class Strings
         ["weapon.fists"] = "FISTS",
         ["pad.22"] = "In the title menu and the save / load / Esc menus: D-pad or left stick move between the buttons and boxes (up / down move the save list), the bottom button presses; on a name box it opens the controller keyboard (D-pad moves, bottom button types, X deletes, Y space, LB capitals, CLEAR empties the box, B closes); the right stick still moves the pointer; in a PZA window (Cat Crawlers' table, the SlowMo or Director's Kit window) the D-pad picks its buttons and answers and the bottom button presses, while the sticks stay yours",
         ["log.new_world"] = "WASD Control: a new world: the last world's steering, waits, holds and view are dropped.",
+        ["debug.shoulder"] = "PZA's WASD: shoulder view on / off",
+        ["debug.shoulder_now"] = "PZA's WASD: view {0}",
+        ["log.api_steering_held"] = "WASD Control: {0} holds the steering (WasdApi.HoldSteering): no move or stop orders while it lasts.",
+        ["log.api_normal_view"] = "WASD Control: back to the normal view for {0} (WasdApi.SetNormalView).",
         ["keyboard.caps"] = "CAPS",
         ["keyboard.caps_on"] = "CAPS ON",
         ["keyboard.space"] = "SPACE",

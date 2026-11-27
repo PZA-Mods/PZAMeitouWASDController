@@ -30,27 +30,31 @@ public static class WasdWindow
 
     // 0.8.4 (PZA's Meitou UI 0.3.0, the user 2026-11-17: windows too big and half empty, more and more pages): three tabs, a smaller window;
     // the controller list moved under the keys; help and controller rows wrapped in the real font at the list's width, so nothing spills.
-    public static string LayoutXml() => L.Doc(L.WindowMin("Root", "PZA'S WASD & CONTROLLER SUPPORT", 0.36, 0.12, 0.28, 0.60,
+    public static string LayoutXml() => L.Doc(L.WindowMin("Root", "PZA'S WASD & CONTROLLER SUPPORT", 0.36, 0.05, 0.28, 0.75,
         L.Tabs("Tabs", 0.03, 0.02, 0.94, 0.96,
             ("TabMain", [
-                L.Text("lbState", 0.03, 0.005, 0.94, 0.06),
-                L.Button("On", 0.03, 0.068, 0.455, 0.072), L.Button("Off", 0.515, 0.068, 0.455, 0.072),
-                L.Text("lbCamera", 0.03, 0.15, 0.94, 0.04),
-                L.Button("ViewNormal", 0.03, 0.192, 0.3, 0.058), L.Button("ViewShoulder", 0.35, 0.192, 0.3, 0.058), L.Button("ViewFirst", 0.67, 0.192, 0.3, 0.058),
-                L.Text("lbLook", 0.03, 0.255, 0.94, 0.04),
-                L.Button("LookLess", 0.03, 0.297, 0.12, 0.058), L.Slider("LookSlider", 0.17, 0.297, 0.66, 0.058, range: LookPositions, pos: LookPos(Driver.Settings.LookScale)), L.Button("LookMore", 0.85, 0.297, 0.12, 0.058),
-                L.Text("lbFov", 0.03, 0.36, 0.94, 0.04),
-                L.Button("FovLess", 0.03, 0.402, 0.12, 0.058), L.Slider("FovSlider", 0.17, 0.402, 0.66, 0.058, range: FovPositions, pos: FovPos(FovNow)), L.Button("FovMore", 0.85, 0.402, 0.12, 0.058),
-                L.Text("lbSteer", 0.03, 0.465, 0.94, 0.04),
-                L.Button("Steer30", 0.03, 0.507, 0.2175, 0.058), L.Button("Steer40", 0.2708, 0.507, 0.2175, 0.058), L.Button("Steer60", 0.5117, 0.507, 0.2175, 0.058), L.Button("Steer80", 0.7525, 0.507, 0.2175, 0.058),
-                L.Text("lbInvert", 0.03, 0.57, 0.94, 0.04),
-                L.Button("InvertOff", 0.03, 0.612, 0.455, 0.058), L.Button("InvertOn", 0.515, 0.612, 0.455, 0.058),
-                L.Text("lbSide", 0.03, 0.675, 0.94, 0.04),
-                L.Button("SideLeft", 0.03, 0.717, 0.455, 0.058), L.Button("SideRight", 0.515, 0.717, 0.455, 0.058),
-                L.Text("lbDialTime", 0.03, 0.78, 0.94, 0.04),
-                L.Button("DialSlow", 0.03, 0.822, 0.3, 0.058), L.Button("DialPause", 0.35, 0.822, 0.3, 0.058), L.Button("DialNormal", 0.67, 0.822, 0.3, 0.058),
-                L.Text("lbLedges", 0.03, 0.885, 0.94, 0.04),
-                L.Button("LedgesStop", 0.03, 0.927, 0.455, 0.058), L.Button("LedgesFall", 0.515, 0.927, 0.455, 0.058)]),
+                L.Text("lbState", 0.03, 0.004, 0.94, 0.044),
+                L.Button("On", 0.03, 0.050, 0.455, 0.052), L.Button("Off", 0.515, 0.050, 0.455, 0.052),
+                L.Text("lbCamera", 0.03, 0.110, 0.94, 0.032),
+                L.Button("ViewNormal", 0.03, 0.144, 0.3, 0.046), L.Button("ViewShoulder", 0.35, 0.144, 0.3, 0.046), L.Button("ViewFirst", 0.67, 0.144, 0.3, 0.046),
+                L.Text("lbLook", 0.03, 0.196, 0.94, 0.032),
+                L.Button("LookLess", 0.03, 0.230, 0.12, 0.046), L.Slider("LookSlider", 0.17, 0.230, 0.66, 0.046, range: LookPositions, pos: LookPos(Driver.Settings.LookScale)), L.Button("LookMore", 0.85, 0.230, 0.12, 0.046),
+                L.Text("lbFov", 0.03, 0.282, 0.94, 0.032),
+                L.Button("FovLess", 0.03, 0.316, 0.12, 0.046), L.Slider("FovSlider", 0.17, 0.316, 0.66, 0.046, range: FovPositions, pos: FovPos(FovNow)), L.Button("FovMore", 0.85, 0.316, 0.12, 0.046),
+                L.Text("lbHeight", 0.03, 0.368, 0.94, 0.032),
+                L.Button("HeightLess", 0.03, 0.402, 0.12, 0.046), L.Slider("HeightSlider", 0.17, 0.402, 0.66, 0.046, range: HeightPositions, pos: HeightPos(Driver.Settings.ShoulderHeight)), L.Button("HeightMore", 0.85, 0.402, 0.12, 0.046),
+                L.Text("lbSteer", 0.03, 0.454, 0.94, 0.032),
+                L.Button("Steer30", 0.03, 0.488, 0.2175, 0.046), L.Button("Steer40", 0.2708, 0.488, 0.2175, 0.046), L.Button("Steer60", 0.5117, 0.488, 0.2175, 0.046), L.Button("Steer80", 0.7525, 0.488, 0.2175, 0.046),
+                L.Text("lbInvert", 0.03, 0.540, 0.94, 0.032),
+                L.Button("InvertOff", 0.03, 0.574, 0.455, 0.046), L.Button("InvertOn", 0.515, 0.574, 0.455, 0.046),
+                L.Text("lbSide", 0.03, 0.626, 0.94, 0.032),
+                L.Button("SideLeft", 0.03, 0.660, 0.455, 0.046), L.Button("SideRight", 0.515, 0.660, 0.455, 0.046),
+                L.Text("lbDialTime", 0.03, 0.712, 0.94, 0.032),
+                L.Button("DialSlow", 0.03, 0.746, 0.3, 0.046), L.Button("DialPause", 0.35, 0.746, 0.3, 0.046), L.Button("DialNormal", 0.67, 0.746, 0.3, 0.046),
+                L.Text("lbLedges", 0.03, 0.798, 0.94, 0.032),
+                L.Button("LedgesStop", 0.03, 0.832, 0.455, 0.046), L.Button("LedgesFall", 0.515, 0.832, 0.455, 0.046),
+                L.Text("lbManualCombat", 0.03, 0.884, 0.94, 0.032),
+                L.Button("ManualCombatOn", 0.03, 0.918, 0.455, 0.046), L.Button("ManualCombatOff", 0.515, 0.918, 0.455, 0.046)]),
             ("TabKeys", [
                 L.Text("lbKeysIntro", 0.03, 0.01, 0.94, 0.11, wrap: true),
                 L.Text("lbKeyToggle", 0.03, 0.13, 0.61, 0.075), L.Button("KeyToggle", 0.65, 0.13, 0.32, 0.075),
@@ -110,7 +114,7 @@ public static class WasdWindow
     static void Bind(UiBindings b)
     {
         var s = Driver.Settings;
-        PzaWindow.Enable(b, "On", "Off", "ViewNormal", "ViewShoulder", "ViewFirst", "LookLess", "LookMore", "FovLess", "FovMore", "InvertOff", "InvertOn", "Steer30", "Steer40", "Steer60", "Steer80", "DialSlow", "DialPause", "DialNormal",
+        PzaWindow.Enable(b, "On", "Off", "ViewNormal", "ViewShoulder", "ViewFirst", "LookLess", "LookMore", "FovLess", "FovMore", "HeightLess", "HeightMore", "InvertOff", "InvertOn", "Steer30", "Steer40", "Steer60", "Steer80", "DialSlow", "DialPause", "DialNormal",
             "SideLeft", "SideRight", "KeyToggle", "KeyShoulder", "KeyFirst", "KeyTake");
         b.Text["Root"] = Strings.Get("win.title");
         PzaWindow.TabText(b, "Tabs", 0, Strings.Get("tab.control"));
@@ -130,6 +134,9 @@ public static class WasdWindow
         b.Text["lbFov"] = Strings.Format(FirstShown ? "win.fov_first" : "win.fov", Math.Round(ViewLens.Lens(FovNow) * 180 / Math.PI));
         b.Text["FovLess"] = Strings.Get("win.less");
         b.Text["FovMore"] = Strings.Get("win.more");
+        b.Text["lbHeight"] = Strings.Format("win.shoulder_height", Math.Round(HeightAt(HeightPos(s.ShoulderHeight))));
+        b.Text["HeightLess"] = Strings.Get("win.less");
+        b.Text["HeightMore"] = Strings.Get("win.more");
         b.Text["lbInvert"] = Strings.Get("win.invert");
         b.Text["InvertOff"] = Pick("win.off", !s.InvertLook);
         b.Text["InvertOn"] = Pick("win.on", s.InvertLook);
@@ -148,6 +155,11 @@ public static class WasdWindow
         b.Text["lbLedges"] = Strings.Get("win.ledges");
         b.Text["LedgesStop"] = Pick("win.ledges_stop", s.Ledges != "Fall" || !LedgePatch.Installed);
         b.Text["LedgesFall"] = LedgePatch.Installed ? Pick("win.ledges_fall", s.Ledges == "Fall") : Strings.Get("win.ledges_off");
+        bool mc = ManualCombatLink.Available;
+        b.Text["lbManualCombat"] = Strings.Get("win.manual_combat");
+        b.Text["ManualCombatOn"] = mc ? Pick("win.on", s.ManualCombat) : Strings.Get("win.ledges_off");
+        b.Text["ManualCombatOff"] = mc ? Pick("win.off", !s.ManualCombat) : Strings.Get("win.ledges_off");
+        if (mc) PzaWindow.Enable(b, "ManualCombatOn", "ManualCombatOff");
 
         b.Text["lbKeysIntro"] = Strings.Get("keys.intro");
         foreach (var a in KeyRows)
@@ -191,8 +203,11 @@ public static class WasdWindow
             case "LookMore": SetLook(LookPos(Driver.Settings.LookScale) + 1, "+"); break;
             case "FovLess": SetFov(FovPos(FovNow) - 1, "-"); break;
             case "FovMore": SetFov(FovPos(FovNow) + 1, "+"); break;
+            case "HeightLess": SetHeight(HeightPos(Driver.Settings.ShoulderHeight) - 1, "-"); break;
+            case "HeightMore": SetHeight(HeightPos(Driver.Settings.ShoulderHeight) + 1, "+"); break;
             case "scroll" when e.Widget == "LookSlider": SetLook((int)Math.Round(e.Value), null); break;
             case "scroll" when e.Widget == "FovSlider": SetFov((int)Math.Round(e.Value), null); break;
+            case "scroll" when e.Widget == "HeightSlider": SetHeight((int)Math.Round(e.Value), null); break;
             case "Steer30": Driver.SetSetting(nameof(DcSettings.SteerDistance), 30f); break;
             case "Steer40": Driver.SetSetting(nameof(DcSettings.SteerDistance), 40f); break;
             case "Steer60": Driver.SetSetting(nameof(DcSettings.SteerDistance), 60f); break;
@@ -202,6 +217,8 @@ public static class WasdWindow
             case "DialNormal": Driver.SetSetting(nameof(DcSettings.DialTime), "Normal"); break;
             case "LedgesStop": Driver.SetSetting(nameof(DcSettings.Ledges), "Stop"); Counters.Add("ledge.setting_stop"); break;
             case "LedgesFall" when LedgePatch.Installed: Driver.SetSetting(nameof(DcSettings.Ledges), "Fall"); Counters.Add("ledge.setting_fall"); break;
+            case "ManualCombatOn" when ManualCombatLink.Available: ManualCombatLink.SetEnabled(true, Driver.Player is { } p1 ? Access.Session(p1) : null, "window"); break;
+            case "ManualCombatOff" when ManualCombatLink.Available: ManualCombatLink.SetEnabled(false, Driver.Player is { } p2 ? Access.Session(p2) : null, "window"); break;
             case "InvertOff": Driver.SetSetting(nameof(DcSettings.InvertLook), false); break;
             case "InvertOn": Driver.SetSetting(nameof(DcSettings.InvertLook), true); break;
             case "SideLeft": Driver.SetSetting(nameof(DcSettings.ShoulderSide), "Left"); break;
@@ -217,12 +234,15 @@ public static class WasdWindow
 
     public static int LookPositions => (int)Math.Round((DcSettings.MaxLook - DcSettings.MinLook) / DcSettings.LookStep) + 1;
     public static int FovPositions => (int)Math.Round((DcSettings.MaxFov - DcSettings.MinFov) / DcSettings.FovStep) + 1;
+    public static int HeightPositions => (int)Math.Round((DcSettings.MaxShoulderHeight - DcSettings.MinShoulderHeight) / DcSettings.ShoulderHeightStep) + 1;
 
     /// <summary>The slider position for a setting (out-of-range and odd values clamp), and back.</summary>
     public static int LookPos(double scale) => (int)Math.Round((Keys.Look(scale) - DcSettings.MinLook) / DcSettings.LookStep);
     public static double LookAt(int pos) => Math.Round(DcSettings.MinLook + Math.Clamp(pos, 0, LookPositions - 1) * DcSettings.LookStep, 2);
     public static int FovPos(double degrees) => (int)Math.Round((ViewLens.Lens(degrees) * 180 / Math.PI - DcSettings.MinFov) / DcSettings.FovStep);
     public static double FovAt(int pos) => DcSettings.MinFov + Math.Clamp(pos, 0, FovPositions - 1) * DcSettings.FovStep;
+    public static int HeightPos(double height) => (int)Math.Round(((double.IsFinite(height) ? Math.Clamp(height, DcSettings.MinShoulderHeight, DcSettings.MaxShoulderHeight) : Views.ShoulderHeight) - DcSettings.MinShoulderHeight) / DcSettings.ShoulderHeightStep);
+    public static double HeightAt(int pos) => DcSettings.MinShoulderHeight + Math.Clamp(pos, 0, HeightPositions - 1) * DcSettings.ShoulderHeightStep;
 
     /// <summary>The field-of-view row sets the first-person view's lens while first person is on, else the over-the-shoulder view's (fp-fov).</summary>
     internal static bool FirstShown => Views.Current == View.First;
@@ -231,7 +251,7 @@ public static class WasdWindow
     internal static double FovNow => FirstShown ? Driver.Settings.FirstFov : Driver.Settings.ShoulderFov;
 
     static int s_sliderLogs;
-    static double s_shownLook = double.NaN, s_shownFov = double.NaN;
+    static double s_shownLook = double.NaN, s_shownFov = double.NaN, s_shownHeight = double.NaN;
 
     /// <summary>The look slider or its - / + moved (button: the slider is moved to match).</summary>
     static void SetLook(int pos, string? button)
@@ -256,12 +276,23 @@ public static class WasdWindow
         if (++s_sliderLogs <= 40) Log.Line($"WASD Control: {(first ? "first-person" : "over-the-shoulder")} field of view {v:0} degrees ({button ?? "the slider"})");
     }
 
+    /// <summary>The over-the-shoulder height slider or its - / + moved.</summary>
+    static void SetHeight(int pos, string? button)
+    {
+        double v = HeightAt(pos);
+        if (v == Driver.Settings.ShoulderHeight) return;
+
+        Driver.SetSetting(nameof(DcSettings.ShoulderHeight), v);
+        Counters.Add("window.shoulder_height");
+        if (++s_sliderLogs <= 40) Log.Line($"WASD Control: over-the-shoulder height {v:0} ({button ?? "the slider"})");
+    }
+
     /// <summary>Once a frame: the sliders follow their settings when they changed elsewhere (the - / + buttons, Settings > Mods).</summary>
     static void FollowSliders()
     {
         if (!Window.IsOpen)
         {
-            s_shownLook = s_shownFov = double.NaN;
+            s_shownLook = s_shownFov = s_shownHeight = double.NaN;
             return;
         }
 
@@ -275,6 +306,11 @@ public static class WasdWindow
         {
             s_shownFov = FovNow;
             Window.SetSlider("FovSlider", FovPos(FovNow));
+        }
+        if (st.ShoulderHeight != s_shownHeight)
+        {
+            s_shownHeight = st.ShoulderHeight;
+            Window.SetSlider("HeightSlider", HeightPos(st.ShoulderHeight));
         }
     }
 

@@ -50,6 +50,8 @@ public sealed class WasdControlMod : IMod
 
         context.AddDebugCommand(Strings.Get("debug.toggle"), _ => Driver.Toggle("F10"));
         context.AddDebugCommand(Strings.Get("debug.window"), _ => { WasdWindow.Window.Open(); return Strings.Get("debug.window"); });
+        // the shoulder view from F10 (the Director's Kit session's headless runs, 2026-11-21: the agent channel has no key presses)
+        context.AddDebugCommand(Strings.Get("debug.shoulder"), _ => { Views.Set(Views.Current == View.Shoulder ? View.Normal : View.Shoulder, Driver.ShowNotice); return Strings.Format("debug.shoulder_now", Views.Current); });
         // the window and the tiny button: PZA's Meitou UI (compiled in)
         PZA.MeitouUi.PzaUi.Log = s => Log.Line(s);
         PZA.MeitouUi.PzaUi.EachFrame = () => { WasdWindow.EachFrame(); SquadWheel.EachFrame(); ScreenWheel.EachFrame(); OrdersDial.EachFrame(); DialTime.EachFrame(); };

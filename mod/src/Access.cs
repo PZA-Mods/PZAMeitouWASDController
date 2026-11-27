@@ -77,8 +77,8 @@ public static class Access
         s_mouseDown = Need(AccessTools.Method(PlayerInterface, "MouseDown", [typeof(MouseButton), typeof(Vector2), typeof(bool), typeof(bool), typeof(bool)]),
             "PlayerInterface.MouseDown", missing);
         s_gameHotkeys = AccessTools.Property(PlayerInterface, "GameHotkeys")!;
-        s_hotkeyKey = s_gameHotkeys is null ? null! : AccessTools.Method(s_gameHotkeys.PropertyType, "Key", [typeof(Key), typeof(bool)])!;
-        if (s_hotkeyKey is null) missing.Add("method GameHotkeys.Key(Key, bool) via PlayerInterface.GameHotkeys");
+        HotkeyKey = s_gameHotkeys is null ? null! : AccessTools.Method(s_gameHotkeys.PropertyType, "Key", [typeof(Key), typeof(bool)])!;
+        if (HotkeyKey is null) missing.Add("method GameHotkeys.Key(Key, bool) via PlayerInterface.GameHotkeys");
         s_notice = AccessTools.Method(PlayerInterface, "Notice", [typeof(string), typeof(bool), typeof(string)])!;
         if (s_notice is null) missing.Add("method PlayerInterface.Notice(text, error, logText)");
 
@@ -91,10 +91,10 @@ public static class Access
 
     /// <summary>PlayerInterface.GameHotkeys and its Key(key, shift): the game view's hotkeys as the game loop feeds a key-down.</summary>
     static PropertyInfo s_gameHotkeys = null!;
-    static MethodInfo s_hotkeyKey = null!;
+    public static MethodInfo HotkeyKey = null!;
 
     /// <summary>Presses a game hotkey as the keyboard would (the orders, members, run speed...).</summary>
-    public static void PressHotkey(object player, Key key) => s_hotkeyKey.Invoke(s_gameHotkeys.GetValue(player), [key, false]);
+    public static void PressHotkey(object player, Key key) => HotkeyKey.Invoke(s_gameHotkeys.GetValue(player), [key, false]);
 
     #region Clicks (PlayerInterface's world clicks)
 
@@ -400,6 +400,21 @@ public static class Access
         return s_hostPlayer?.GetValue(host) is { } p && p.GetType() == PlayerInterface ? p : null;
     }
     static FieldInfo? s_agentChannel, s_interfaceHidden;
+    static PropertyInfo? s_freeCam, s_freePhoto;
+    static bool s_photoLooked;
+
+    /// <summary>Meitou's photo mode is active (CameraRig.Free.Photo != null, Meitou 0.22+; false on older builds).</summary>
+    public static bool PhotoModeActive(WorldSession session)
+    {
+        if (!s_photoLooked)
+        {
+            s_photoLooked = true;
+            s_freeCam = AccessTools.Property(session.Camera.GetType(), "Free");
+            s_freePhoto = s_freeCam is null ? null : AccessTools.Property(s_freeCam.PropertyType, "Photo");
+        }
+        if (s_freeCam is null || s_freePhoto is null) return false;
+        return s_freeCam.GetValue(session.Camera) is { } free && s_freePhoto.GetValue(free) is not null;
+    }
 
     /// <summary>Meitou's "interface hidden" (GameHost.AgentChannel.InterfaceHidden, what F7 flips, GameLoop.InterfaceKey); null when it cannot be read.</summary>
     public static bool? InterfaceHidden => HiddenField() is { } f && s_lastHost is { } h && s_agentChannel!.GetValue(h) is { } ch ? (bool?)f.GetValue(ch) : null;
@@ -426,6 +441,25 @@ public static class Access
     public static CharacterSnapshot Tracked(object host, CharacterSnapshot c) => (CharacterSnapshot)s_tracked.Invoke(host, [c])!;
 
     public static Vector3 DrawnPosition(object host, CharacterSnapshot c) => (Vector3)s_drawnPosition.Invoke(host, [c])!;
+
+    static MethodInfo? s_eyeGroundAt;
+    static bool s_eyeGroundLooked;
+
+    /// <summary>Highest ground, floor, or map feature at (x, z) near <paramref name="eyeY"/> (Meitou 0.23+ CameraRig.EyeGroundAt, falling back to GroundAt).</summary>
+    public static float EyeGroundAt(global::Meitou.Game.Host.Cameras.CameraRig rig, float x, float z, float eyeY)
+    {
+        if (!s_eyeGroundLooked)
+        {
+            s_eyeGroundLooked = true;
+            s_eyeGroundAt = AccessTools.Method(rig.GetType(), "EyeGroundAt", [typeof(float), typeof(float), typeof(float)]);
+        }
+        if (s_eyeGroundAt is not null)
+        {
+            try { return (float)s_eyeGroundAt.Invoke(rig, [x, z, eyeY])!; }
+            catch { }
+        }
+        return rig.GroundAt(x, z);
+    }
 
     /// <summary>The drawn head bone; null when the character is not drawn this frame.</summary>
     public static Vector3? DrawnHead(object player, CharacterId id) =>
@@ -680,7 +714,10 @@ public static class Access
         s_loopDown = AccessTools.Method(loop, "PointerDown", [typeof(MouseButton?), typeof(Vector2)]);
         s_loopUp = AccessTools.Method(loop, "PointerUp", [typeof(MouseButton?), typeof(Vector2)]);
         s_loopPixels = AccessTools.Method(loop, "Pixels", [typeof(Vector2)]);
-        s_panelKey = s_loopPanel is null ? null : AccessTools.Method(s_loopPanel.PropertyType, "KeyDown", [typeof(Key), typeof(bool), typeof(bool)]);
+        s_panelKey = s_loopPanel is null ? null
+            : AccessTools.Method(s_loopPanel.PropertyType, "KeyDown", [typeof(Key), typeof(bool), typeof(bool), typeof(bool)])
+            ?? AccessTools.Method(s_loopPanel.PropertyType, "KeyDown", [typeof(Key), typeof(bool), typeof(bool)])
+            ?? AccessTools.Method(s_loopPanel.PropertyType, "KeyDown", [typeof(Key), typeof(bool)]);
         s_panelMove = s_loopPanel is null ? null : AccessTools.Method(s_loopPanel.PropertyType, "MouseMove", [typeof(Vector2)]);   // optional: hover, drags
         bool all = s_loopPanel is not null && s_panelVisible is not null && s_loopDown is not null && s_loopUp is not null && s_loopPixels is not null && s_panelKey is not null;
         Log.Line(all ? "WASD Control: Meitou's settings panel: the pad clicks and closes it as the mouse and Esc do."
@@ -700,7 +737,9 @@ public static class Access
     {
         if (!SettingsPanelOpen()) return false;
 
-        s_panelKey!.Invoke(Panel(), [Key.Escape, false, false]);
+        int n = s_panelKey!.GetParameters().Length;
+        object[] args = n == 4 ? [Key.Escape, false, false, false] : n == 3 ? [Key.Escape, false, false] : [Key.Escape, false];
+        s_panelKey.Invoke(Panel(), args);
         return true;
     }
 

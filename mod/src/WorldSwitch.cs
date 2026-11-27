@@ -1,7 +1,8 @@
 // PZA's WASD & Controller Support (Meitou). Author: PZA. Licence: GPLv3 or later.
-// WorldSwitch: "is this a world I have not steered yet?" (a new game, a load, back from the title). Meitou builds a new WorldSession for each;
-// on a load the new world's Read / Ready run BEFORE the old world's systems are disposed (MeitouClient WorldSession), so nothing here resets on
-// a dispose: Driver resets its per-world state on the FIRST control tick of a new session, which can only be the new world's.
+// WorldSwitch: "is this a world I have not steered yet?" (a new game, a load, back from the title). Meitou keeps one WorldSession for the
+// process and swaps session.World in place (ReplaceWorld), so Driver passes session.World here; on a load the new world's Read / Ready run
+// BEFORE the old world's systems are disposed, so nothing here resets on a dispose: Driver resets its per-world state on the FIRST control tick
+// of a new World, which can only be the new world's.
 // A weak reference: the old world is never kept alive by us.
 namespace PZA.WASDControl.Meitou;
 

@@ -36,6 +36,8 @@ public static class Patches
             lines.Add("patched PlayerInterface.Move prefix");
             h.Patch(Access.ContextMenuRelease, prefix: Hook(nameof(MenuReleasePrefix)));
             lines.Add("patched ContextMenuWindow.ContextMenuRelease prefix");
+            h.Patch(Access.HotkeyKey, prefix: Hook(nameof(HotkeyKeyPrefix)));
+            lines.Add("patched GameHotkeys.Key prefix (Shift+F stays Follow Me)");
         }
         catch
         {
@@ -177,6 +179,22 @@ public static class Patches
         catch (Exception e)
         {
             Log.Exception("ContextMenuRelease prefix", e);
+            return true;
+        }
+    }
+
+    /// <summary>Skip Meitou's FocusCharacter (F) when Shift+F is pressed while WASD is on and not in Free Camera.</summary>
+    static bool HotkeyKeyPrefix(Key key, bool shift)
+    {
+        try
+        {
+            if (Driver.On && shift && key == Key.F && (Driver.Player is null || !Access.Session(Driver.Player).Camera.IsFree))
+                return false;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Exception("GameHotkeys.Key prefix", e);
             return true;
         }
     }

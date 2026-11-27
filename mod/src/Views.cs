@@ -107,36 +107,116 @@ public static class Views
     }
 
     /// <summary>
-    /// The over-the-shoulder boom: full while looking level or down; looking up it shortens so the eye stays above the ground (the eye sits
-    /// below the look point by boom * sin(-pitch)), as a game camera pulls in when it tilts up: at most ShoulderHeight - 4 below the look point.
+    /// Minimum eye clearance above terrain for a given vertical FOV (radians). At wide vertical FOVs (&gt;65 deg), the bottom edge of the
+    /// near clip plane drops further below the eye (near * tan(fov / 2)); keeping the eye above ground + clearance stops slopes and wide
+    /// lenses from slicing into the underworld ocean.
     /// </summary>
-    public static float ShoulderBoom(float pitch, bool carrying = false)
+    public static float GroundClearance(float fovRad)
     {
-        float distance = carrying ? CarryShoulderDistance : ShoulderDistance, height = carrying ? CarryShoulderHeight : ShoulderHeight;
+        float half = fovRad > 0 && float.IsFinite(fovRad) ? Math.Clamp(fovRad * 0.5f, 0.2f, 1.15f) : 0.436f;
+        return MathF.Max(5f, 4.5f + 4.5f * MathF.Tan(half));
+    }
+
+    /// <summary>
+    /// The over-the-shoulder boom: full while looking level or down; looking up it shortens so the eye stays above the ground (the eye sits
+    /// below the look point by boom * sin(-pitch)), as a game camera pulls in when it tilts up: at most height - clearance below the look point.
+    /// </summary>
+    public static float ShoulderBoom(float pitch, bool carrying = false, float shoulderHeight = ShoulderHeight, float clearance = 4f)
+    {
+        float distance = carrying ? CarryShoulderDistance : ShoulderDistance;
+        float h = float.IsFinite(shoulderHeight) ? Math.Clamp(shoulderHeight, (float)DcSettings.MinShoulderHeight, (float)DcSettings.MaxShoulderHeight) : ShoulderHeight;
+        float height = carrying ? CarryShoulderHeight + (h - ShoulderHeight) : h;
         float down = -MathF.Sin(pitch);
         if (down <= 0) return distance;
 
-        return MathF.Max(MathF.Min(distance, (height - 4) / down), 6);
+        return MathF.Max(MathF.Min(distance, MathF.Max(0f, height - clearance) / down), 6);
     }
 
     /// <summary>
     /// The orbit camera's look point and boom for a view (WorldCamera: eye = target + back · distance, back = (cos p · sin y, sin p, cos p · cos y)).
     /// Over-the-shoulder: the look point above the feet, shifted to the camera's right. First person: the eye just in front of the head.
-    /// <paramref name="carrying"/>: the controlled character carries someone (the Carry* values).
+    /// When <paramref name="groundAt"/> is given, keeps the camera eye above terrain + <see cref="GroundClearance"/> so wide FOVs (&gt;65 deg)
+    /// and slopes never clip through the ground into the underworld ocean.
     /// </summary>
-    public static (Vector3 Target, float Distance) Pose(View view, Vector3 feet, Vector3? head, float yaw, float pitch, float side = 1, bool carrying = false)
+    public static (Vector3 Target, float Distance) Pose(View view, Vector3 feet, Vector3? head, float yaw, float pitch, float side = 1, bool carrying = false,
+        float shoulderHeight = ShoulderHeight, float fovRad = 0, Func<float, float, float>? groundAt = null)
     {
         var back = new Vector3(MathF.Cos(pitch) * MathF.Sin(yaw), MathF.Sin(pitch), MathF.Cos(pitch) * MathF.Cos(yaw));
         var right = new Vector3(MathF.Cos(yaw), 0, -MathF.Sin(yaw));
+        float clearance = fovRad > 0 ? GroundClearance(fovRad) : 4f;
         if (view == View.Shoulder)
         {
-            float height = carrying ? CarryShoulderHeight : ShoulderHeight, shift = carrying ? CarryShoulderSide : ShoulderSide;
-            return (feet + new Vector3(0, height, 0) + right * (shift * side), ShoulderBoom(pitch, carrying));
+            float h = float.IsFinite(shoulderHeight) ? Math.Clamp(shoulderHeight, (float)DcSettings.MinShoulderHeight, (float)DcSettings.MaxShoulderHeight) : ShoulderHeight;
+            float height = carrying ? CarryShoulderHeight + (h - ShoulderHeight) : h;
+            float shift = carrying ? CarryShoulderSide : ShoulderSide;
+            float distance = ShoulderBoom(pitch, carrying, h, clearance);
+            var target = feet + new Vector3(0, height, 0) + right * (shift * side);
+            if (groundAt is not null)
+            {
+                float radius = MathF.Max(3f, clearance * 0.6f);
+                var flatFwd = new Vector3(-MathF.Sin(yaw), 0, -MathF.Cos(yaw));
+                var eye = target + back * distance;
+                var mid = target + back * (distance * 0.5f);
+                float g = SampleGroundArea(groundAt, eye, mid, right, flatFwd, radius);
+                if (float.IsFinite(g))
+                {
+                    float minEyeY = g + clearance;
+                    if (eye.Y < minEyeY)
+                    {
+                        if (back.Y < -0.05f)
+                        {
+                            float maxDist = (minEyeY - target.Y) / back.Y;
+                            distance = Math.Clamp(maxDist, 6f, distance);
+                            eye = target + back * distance;
+                            mid = target + back * (distance * 0.5f);
+                            float g2 = SampleGroundArea(groundAt, eye, mid, right, flatFwd, radius);
+                            if (float.IsFinite(g2)) minEyeY = MathF.Max(minEyeY, g2 + clearance);
+                        }
+                        if (eye.Y < minEyeY) target.Y += minEyeY - eye.Y;
+                    }
+                }
+            }
+            return (target, distance);
         }
 
         var forward = new Vector3(-MathF.Sin(yaw), 0, -MathF.Cos(yaw));
-        var eye = (head ?? feet + new Vector3(0, HeadFallback, 0)) + forward * (carrying ? CarryFaceAhead : FaceAhead)
+        var fpEye = (head ?? feet + new Vector3(0, HeadFallback, 0)) + forward * (carrying ? CarryFaceAhead : FaceAhead)
             + new Vector3(0, carrying ? CarryEyeLift : 0, 0);
-        return (eye - back * FirstBoom, FirstBoom);
+        if (groundAt is not null)
+        {
+            float radius = MathF.Max(2f, clearance * 0.4f);
+            float g = SampleGroundArea(groundAt, fpEye, fpEye, right, forward, radius);
+            if (float.IsFinite(g))
+            {
+                float minEyeY = g + clearance * 0.5f;
+                if (fpEye.Y < minEyeY) fpEye.Y = minEyeY;
+            }
+        }
+        return (fpEye - back * FirstBoom, FirstBoom);
+    }
+
+    static float SampleGroundArea(Func<float, float, float> groundAt, Vector3 eye, Vector3 mid, Vector3 right, Vector3 forward, float radius)
+    {
+        float best = SampleOne(groundAt, eye.X, eye.Z);
+        if (mid != eye) best = MaxFinite(best, SampleOne(groundAt, mid.X, mid.Z));
+        if (radius > 0)
+        {
+            best = MaxFinite(best, SampleOne(groundAt, eye.X + right.X * radius, eye.Z + right.Z * radius));
+            best = MaxFinite(best, SampleOne(groundAt, eye.X - right.X * radius, eye.Z - right.Z * radius));
+            best = MaxFinite(best, SampleOne(groundAt, eye.X + forward.X * radius, eye.Z + forward.Z * radius));
+            best = MaxFinite(best, SampleOne(groundAt, eye.X - forward.X * radius, eye.Z - forward.Z * radius));
+        }
+        return best;
+    }
+
+    static float SampleOne(Func<float, float, float> groundAt, float x, float z)
+    {
+        try { return groundAt(x, z); } catch { return float.NaN; }
+    }
+
+    static float MaxFinite(float a, float b)
+    {
+        if (float.IsFinite(a) && float.IsFinite(b)) return MathF.Max(a, b);
+        return float.IsFinite(a) ? a : b;
     }
 }

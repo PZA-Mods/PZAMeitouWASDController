@@ -112,15 +112,15 @@ public static class JumpRules
     public static float ClipProgress(JumpClip c, bool quick, float window) =>
         Length(c) <= 0 ? 0 : (From(c, quick) + Math.Clamp(window, 0, 1) * Span(c, quick)) / Length(c);
 
-    /// <summary>Seconds after a clip ends before the next jump (design 5: "the clip's length + 0.3 s").</summary>
-    public const float Cooldown = 0.15f;
+    /// <summary>Seconds after a clip ends before the next jump.</summary>
+    public const float Cooldown = 0.05f;
 
     /// <summary>
     /// The press buffer (play test 2026-11-20: "the jump stopped working all of a sudden"; log: 37 of 96 presses refused "busy", pressed within
     /// the second a running jump and its cooldown take): a press at most BufferSeconds before the character is free again is kept and jumps
     /// the moment it is; an earlier press is dropped as before.
     /// </summary>
-    public const float BufferSeconds = 0.35f;
+    public const float BufferSeconds = 0.65f;
 
     /// <summary>What a press does: Now (free), Buffer (free within BufferSeconds), Drop. <paramref name="readyAt"/>: the tick the character
     /// is free (long.MinValue: free).</summary>
@@ -179,7 +179,7 @@ public static class JumpRules
         if (!float.IsFinite(slope) || slope > MaxSlopeDegrees)
         {
             why = "slope";
-            return JumpClip.None;
+            return JumpClip.Up;   // steep ground: jump in place instead of refusing
         }
 
         if (!pushed) return JumpClip.Up;
@@ -201,9 +201,10 @@ public static class JumpRules
         && MathF.Abs(endY - startY) <= LevelWithin;
 
     /// <summary>Why a character may not jump now (null: it may). <paramref name="playingUntil"/>: the tick the last jump's cooldown ends.</summary>
-    public static string? Refuse(bool down, bool carried, bool inSomething, bool tumbling, long tick, long playingUntil)
+    public static string? Refuse(bool down, bool carried, bool inSomething, bool tumbling, long tick, long playingUntil, bool crippled = false)
     {
         if (down) return "down";
+        if (crippled) return "crippled";
         if (carried) return "carried";
         if (inSomething) return "in_something";
         if (tumbling) return "tumbling";

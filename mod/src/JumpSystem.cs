@@ -31,14 +31,16 @@ public sealed class JumpSystem : ITickSystem, IStateHashed
     /// <summary>One playing jump: the clip's technique, its first tick, its length in ticks, the tick its cooldown ends.</summary>
     readonly record struct Playing(JumpClip Clip, long Start, int Ticks, long Until, bool Quick, LeapPlan? Leap = null);
 
-    /// <summary>The world being stepped now (Meitou builds the systems again for every new game and load); the source answers only for it.</summary>
-    static volatile JumpSystem? s_current;
+    /// <summary>Each world mapped to its own JumpSystem (bound on its first serial Inputs / SlowWorld tick, never in the constructor: a failed
+    /// or cancelled load builds systems before ReplaceWorld and must never overwrite the live world's entry).</summary>
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, JumpSystem> s_byWorld = new();
     /// <summary>The source was registered (Meitou 0.21.0+).</summary>
     public static bool Registered { get; private set; }
 
     readonly global::Meitou.Simulation.Combat.CombatSystem? _combat;
     readonly Dictionary<CharacterId, Playing> _playing = [];
     readonly Dictionary<JumpClip, Technique> _techniques = [];
+    World? _world;
     string? _lastRefusal;
     long _lastRefusalTick, _started;
 
@@ -46,25 +48,34 @@ public sealed class JumpSystem : ITickSystem, IStateHashed
     {
         _combat = combat;
         FindTechniques();
-        s_current = this;
     }
 
-    /// <summary>The character playing a jump now, for the host (it steers nobody during the clip); null when none.</summary>
-    public static bool Jumping(CharacterId id, long tick) => PlayingClip(id, tick) is not null;
+    void Bind(World world)
+    {
+        if (ReferenceEquals(_world, world)) return;
+        _world = world;
+        s_byWorld.AddOrUpdate(world, this);
+    }
 
-    /// <summary>The current world's combat system (the jump's animation override reads it; World.SystemOf is internal).</summary>
-    public static global::Meitou.Simulation.Combat.CombatSystem? Combat => s_current?._combat;
+    static JumpSystem? Of(object? world) => world is not null && s_byWorld.TryGetValue(world, out var s) ? s : null;
+
+    /// <summary>The character playing a jump now in <paramref name="world"/>, for the host (it steers nobody during the clip); false when none.</summary>
+    public static bool Jumping(object world, CharacterId id, long tick) => PlayingClip(world, id, tick) is not null;
+
+    /// <summary>This world's combat system (the jump's animation override reads it; World.SystemOf is internal).</summary>
+    public static global::Meitou.Simulation.Combat.CombatSystem? CombatOf(object world) => Of(world)?._combat;
 
     /// <summary>The tick <paramref name="id"/> may jump again (its jump's cooldown end); long.MinValue when it may now.</summary>
-    public static long ReadyAt(CharacterId id) =>
-        s_current is { } s && s._playing.TryGetValue(id, out var p) ? p.Until : long.MinValue;
+    public static long ReadyAt(object world, CharacterId id) =>
+        Of(world) is { } s && s._playing.TryGetValue(id, out var p) ? p.Until : long.MinValue;
 
-    /// <summary>The clip <paramref name="id"/> plays now, or null.</summary>
-    public static JumpClip? PlayingClip(CharacterId id, long tick) =>
-        s_current is { } s && s._playing.TryGetValue(id, out var p) && tick < p.Start + p.Ticks ? p.Clip : null;
+    /// <summary>The clip <paramref name="id"/> plays now in <paramref name="world"/>, or null.</summary>
+    public static JumpClip? PlayingClip(object world, CharacterId id, long tick) =>
+        Of(world) is { } s && s._playing.TryGetValue(id, out var p) && tick < p.Start + p.Ticks ? p.Clip : null;
 
     public void Inputs(World world, IReadOnlyList<SimCommand> commands)
     {
+        Bind(world);
         foreach (var c in commands)
             if (c is JumpCommand j) Start(world, j);
     }
@@ -73,6 +84,7 @@ public sealed class JumpSystem : ITickSystem, IStateHashed
 
     public void SlowWorld(World world)
     {
+        Bind(world);
         long fired = Interlocked.Read(ref StaleStumblePatch.Fired) + Interlocked.Read(ref JumpOverPatch.Fired);
         if (fired != s_staleSeen)
         {
@@ -123,8 +135,9 @@ public sealed class JumpSystem : ITickSystem, IStateHashed
         else
         {
             bool down = cold.Medical is not { Dead: false, Incapacitated: false };
+            bool crippled = cold.Medical is { Crawling: true } or { PlayingDead: true };
             long until = _playing.TryGetValue(j.Id, out var p) ? p.Until : long.MinValue;
-            why = JumpRules.Refuse(down, !cold.CarriedBy.IsNone, cold.InSomething != default, TumbleSystem.Tumbling == j.Id, tick, until);
+            why = JumpRules.Refuse(down, !cold.CarriedBy.IsNone, cold.InSomething != default, TumbleSystem.Tumbling == j.Id, tick, until, crippled);
             why ??= CombatHold(j.Id, tick);
         }
 
@@ -188,17 +201,17 @@ public sealed class JumpSystem : ITickSystem, IStateHashed
     /// Where the leaper <paramref name="id"/> stands at <paramref name="tick"/> (LeapRules.At on its clip's time), or null when it leaps
     /// not. Read by LeapSystem in its parallel Act: the table is only changed in this system's serial steps.
     /// </summary>
-    public static Vector3? LeapAt(CharacterId id, long tick)
+    public static Vector3? LeapAt(object world, CharacterId id, long tick)
     {
-        if (s_current is not { } s || !s._playing.TryGetValue(id, out var p) || p.Leap is not { } leap) return null;
+        if (Of(world) is not { } s || !s._playing.TryGetValue(id, out var p) || p.Leap is not { } leap) return null;
         if (tick < p.Start || tick >= p.Until) return null;
         float window = JumpRules.Progress(p.Start, p.Ticks, tick) ?? 1f;
         float clipTime = JumpRules.ClipProgress(p.Clip, p.Quick, window) * JumpRules.Length(p.Clip);
         return LeapRules.At(leap, clipTime, JumpRules.Takeoff(p.Clip), JumpRules.Landing(p.Clip));
     }
 
-    /// <summary>The characters with a leap playing (for LeapSystem's loop; a copy is not needed: changed only in serial steps).</summary>
-    public static IEnumerable<CharacterId> Leapers => s_current is { } s ? s._playing.Where(kv => kv.Value.Leap is not null).Select(kv => kv.Key) : [];
+    /// <summary>The characters with a leap playing in <paramref name="world"/> (for LeapSystem's loop; a copy is not needed: changed only in serial steps).</summary>
+    public static IEnumerable<CharacterId> LeapersOf(object world) => Of(world) is { } s ? s._playing.Where(kv => kv.Value.Leap is not null).Select(kv => kv.Key) : [];
 
     /// <summary>
     /// Why Meitou would not play a mod move for <paramref name="id"/> now (CombatSystem.ModMove asks the sources only for a character it holds in
@@ -209,8 +222,11 @@ public sealed class JumpSystem : ITickSystem, IStateHashed
     {
         if (_combat is null) return null;
         var s = _combat.StateOf(id);
+        // When JumpOverPatch is installed on AnimationSystem.TechniqueOf, stumbles and post-hit staggers no longer lock out jumping.
+        bool allowOverStumble = JumpOverPatch.Installed;
         string? which = s.Down ? "down" : s.AttackTech >= 0 ? "attack " + Tech(s.AttackTech) : s.ReactTech >= 0 ? "reaction " + Tech(s.ReactTech)
-            : s.StumbleClip >= 0 && (tick < s.StunUntil || !StaleStumblePatch.Installed) ? "stumble " + s.StumbleClip : tick < s.StunUntil ? $"stunned until {s.StunUntil}" : null;
+            : !allowOverStumble && s.StumbleClip >= 0 && (tick < s.StunUntil || !StaleStumblePatch.Installed) ? "stumble " + s.StumbleClip
+            : !allowOverStumble && tick < s.StunUntil ? $"stunned until {s.StunUntil}" : null;
         if (which is null) return null;
         Log.Line(Strings.Format("log.jump_combat_hold", id.Slot, which, tick));
         return "combat_" + which.Split(' ')[0];
@@ -239,7 +255,7 @@ public sealed class JumpSystem : ITickSystem, IStateHashed
     /// <summary>The technique and progress for <paramref name="id"/> at <paramref name="tick"/>, or null. Read-only: called on any thread.</summary>
     public static (Technique Technique, float Progress)? Answer(object world, CharacterId id, long tick)
     {
-        if (s_current is not { } s || !s._playing.TryGetValue(id, out var p)) return null;
+        if (Of(world) is not { } s || !s._playing.TryGetValue(id, out var p)) return null;
         if (JumpRules.Progress(p.Start, p.Ticks, tick) is not { } window) return null;
         return s._techniques.TryGetValue(p.Clip, out var t) ? (t, JumpRules.ClipProgress(p.Clip, p.Quick, window)) : null;
     }

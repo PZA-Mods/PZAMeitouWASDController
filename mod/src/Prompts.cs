@@ -11,7 +11,7 @@ namespace PZA.WASDControl.Meitou;
 
 public static class Prompts
 {
-    public enum Place { World, Window, Menu, Dial, Build }
+    public enum Place { World, Window, Menu, Dial, Build, Fight }
 
     /// <summary>The strip stays this long after the last controller input (ms).</summary>
     public const long ShowMs = 30000;
@@ -47,6 +47,12 @@ public static class Prompts
             Strings.Get("prompt.build_undo"), Strings.Get("prompt.build_b"), Strings.Get("prompt.build_floor"), Strings.Get("prompt.build_slope"),
             Strings.Get("prompt.win_stick"),
         ],
+        Place.Fight =>
+        [
+            Strings.Get("prompt.fight_rt"), Strings.Get("prompt.fight_lt"), Strings.Get("prompt.fight_b"),
+            Strings.Get("prompt.fight_r3"), Strings.Get("prompt.fight_leave"),
+            .. ManualCombatLink.HasCrossbow ? [Strings.Get("prompt.fight_swap")] : Array.Empty<string>(),
+        ],
         _ => [],
     };
 
@@ -56,6 +62,7 @@ public static class Prompts
         : Access.ContextMenuOpen(player) ? Place.Menu
         : BuildPad.On ? Place.Build
         : Look.WindowOpen(player) ? Place.Window
+        : ManualCombatLink.Live ? Place.Fight
         : Place.World;
 
     /// <summary>Joins as many prompts as fit in <paramref name="max"/> (measured by <paramref name="measure"/>), dropping from the end.</summary>

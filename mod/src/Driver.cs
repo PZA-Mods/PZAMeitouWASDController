@@ -51,6 +51,8 @@ public static class Driver
 
     /// <summary>G went down this control tick (set in the input step, used in the tick step right after it).</summary>
     static bool s_takePressed;
+    /// <summary>Shift+F went down this control tick: toggle Follow Me for the active squad.</summary>
+    static bool s_followPressed;
 
     #region Input (InputBindings.Resolve postfix)
 
@@ -78,6 +80,8 @@ public static class Driver
         if (pad.Connected && Pad.WasPressed(PadButton.View)) Toggle("pad");
         if (PadHighlight && (!pad.Connected || !On)) SetHighlight(Player is null ? null : Access.Session(Player), false);
         ReleaseLost(pad);   // before anything below can skip the pad: what it no longer holds is let go
+        if (!pad.Connected) FrontendNow = false;   // a pad disconnected on the title must not leave Look.WindowOpen stuck true
+        if (Player is not null) ManualCombatLink.Sync(Access.Session(Player));
         if (pad.Connected && Player is not null && FrontendPad(pad)) return;   // the title menu and its screens (2026-11-20), on or off
         if (!On) return;
 
@@ -92,6 +96,9 @@ public static class Driver
             Counters.Add("skip.free_camera");
             return;
         }
+
+        // Shift+F: toggle Follow Me for the active squad (not in Free Camera, where F flies down; GameHotkeys.Key prefix skips FocusCharacter)
+        if (shift && !ctrl && !alt && input.WasPressed(Key.F)) s_followPressed = true;
 
         float fwd = editing ? 0 : (state.Held(Act.MoveForward) ? 1 : 0) - (state.Held(Act.MoveBack) ? 1 : 0);
         float right = editing ? 0 : (state.Held(Act.MoveRight) ? 1 : 0) - (state.Held(Act.MoveLeft) ? 1 : 0);
@@ -146,7 +153,9 @@ public static class Driver
         if (pad.Right != Vector2.Zero) Counters.Add("pad.look");
 
         SafeExtra.Refresh(Player!);   // the target line under the crosshair (0.10)
-        PadR3(session);   // before the menu's early return, so a release is never lost and a look back never sticks
+        // Fight Mode (ManualCombatLink): when ManualCombat is live in a fight and no window/menu/dial is open, the pad drives attack/block/dodge/target/footwork directly.
+        bool mcFight = ManualCombatLink.Live && !window && !menuNow && !BuildPad.On && !ConversationPad.Open(session);
+        if (!mcFight) PadR3(session);   // before the menu's early return, so a release is never lost and a look back never sticks
         // the Esc menu and its save / load screens (user 2026-11-20): the D-pad and left stick walk it, a name box gets the controller keyboard
         if (MenuNav.Applies(Access.OpenScreens(Player!)))
         {
@@ -205,8 +214,10 @@ public static class Driver
             case WheelResult.Open: return;   // LB held: the screens dial has the pad
         }
         // A outside windows and menus (0.10): the safe extra option for what the crosshair is on (the Orders dial moved to LB + RB).
-        // A outside windows and menus: the safe action on what the crosshair is on; with nothing under it, the jump (JumpRules)
-        if (mayDial && Pad.WasPressed(PadButton.South))
+        // A outside windows and menus: the safe action on what the crosshair is on; with nothing under it, the jump (JumpRules).
+        // Skip while LT+A is held for ManualCombat's out-of-fight crossbow reload.
+        bool mcReloading = pad.Down(PadButton.LeftTrigger) && ManualCombatLink.Active && !ManualCombatLink.InFight && ManualCombatLink.HasCrossbow && ManualCombatLink.Empty;
+        if (mayDial && !mcReloading && Pad.WasPressed(PadButton.South))
         {
             // a safe action only when there is one (play test 2026-11-20, after a fight: the pointer or crosshair on a body or a person with no
             // safe option took A, said "nothing to do", and the character never jumped; headless run: 3 of 3 A presses went to extra.none.person)
@@ -215,8 +226,14 @@ public static class Driver
         }
         if (Menus.Pad(Player!, pad)) return;   // a menu is open: the pad picks in it (D-pad, interact, select)
 
-        if (!window) PadViews();   // Y / X switch views only outside windows (in a PZA window they are its own; play test 2026-11-20)
+        if (!window) PadViews(pad);   // Y / X switch views only outside windows (in a PZA window they are its own; play test 2026-11-20)
         PadHotkeys(session);
+        if (ManualCombatLink.StepPad(Player!, pad, session, window || menuNow || BuildPad.On || ConversationPad.Open(session)))
+        {
+            SetHighlight(session, false);   // never hold Alt in Fight Mode (LeftAlt disables ManualCombat clicks/aim)
+            PadControlTick(rig, state, window);
+            return;
+        }
         PadTriggers(pad, session);
         PadClicks();
         PadControlTick(rig, state, window);
@@ -274,10 +291,11 @@ public static class Driver
         return dt;
     }
 
-    /// <summary>Top face button: over-the-shoulder (as Z); left face button: first person (as N).</summary>
-    static void PadViews()
+    /// <summary>Top face button: over-the-shoulder (as Z); left face button: first person (as N). LT+X is ManualCombat's swap when it has a crossbow.</summary>
+    static void PadViews(PadState pad)
     {
-        bool north = Pad.WasPressed(PadButton.North), west = Pad.WasPressed(PadButton.West);
+        bool north = Pad.WasPressed(PadButton.North);
+        bool west = Pad.WasPressed(PadButton.West) && !(pad.Down(PadButton.LeftTrigger) && ManualCombatLink.Active && ManualCombatLink.HasCrossbow);
         if (north || west) Views.Set(Views.Next(Views.Current, new ViewInput(north, west)), ShowNotice);
     }
 
@@ -438,6 +456,7 @@ public static class Driver
                 s_eastClosed = false;
                 Counters.Add("pad.release_lost.b_closed");
             }
+            if (!pad.Connected || !On || !ManualCombatLink.Live) ManualCombatLink.ReleasePadState(session);
         }
         catch (Exception e)
         {
@@ -524,7 +543,9 @@ public static class Driver
     {
         if (s_controlled is not { } leader) { Counters.Add("follow.no_leader"); return; }
 
-        var others = SquadWheel.Members.Where(i => i != leader).ToArray();
+        var live = Player is not null ? Access.SquadBarMembers(Player).Select(c => c.Id).ToArray() : [];
+        var squad = live.Length > 0 ? live : SquadWheel.Members;
+        var others = squad.Where(i => i != leader).ToArray();
         if (others.Length == 0) { Counters.Add("follow.alone"); return; }
 
         long tick = session.World.Tick;
@@ -624,7 +645,7 @@ public static class Driver
     static bool Dive(WorldSession session)
     {
         if (!JumpOn || !LedgePatch.Installed || s_controlled is not { } id) return false;
-        if (!JumpSystem.Jumping(id, session.World.Tick)) return false;
+        if (!JumpSystem.Jumping(session.World, id, session.World.Tick)) return false;
         if (session.CurrentSnapshot.Characters.FirstOrDefault(c => c.Id == id) is not { } lead) return false;
 
         var facing = JumpRules.Facing(lead.Yaw);
@@ -755,6 +776,7 @@ public static class Driver
 
     public static void OnFrame(object host)
     {
+        WasdApi.Apply();   // another mod's SetNormalView, on the host thread
         ViewLens.FreeCamera = Player is not null && Access.Session(Player).Camera.IsFree;
         if (!On || Views.Current == View.Normal) ViewLens.Release("no view");
         if (!On || Views.Current == View.Normal || Player is null) return;
@@ -802,7 +824,9 @@ public static class Driver
         camera.Pitch = pitch;   // the views' own tilt, past the rig's limit
         bool carrying = !lead.Carrying.IsNone;
         if (carrying) Counters.Add("view.carrying");
-        var (target, distance) = Views.Pose(Views.Current, feet, head, camera.Yaw, pitch, Keys.ShoulderSign, carrying);
+        float groundRefY = feet.Y + (float)Settings.ShoulderHeight;
+        var (target, distance) = Views.Pose(Views.Current, feet, head, camera.Yaw, pitch, Keys.ShoulderSign, carrying,
+            (float)Settings.ShoulderHeight, camera.FieldOfView, (x, z) => Access.EyeGroundAt(session.Camera, x, z, groundRefY));
         camera.Target = target;
         camera.Distance = distance;
         Counters.Add("view.frames");
@@ -816,13 +840,14 @@ public static class Driver
     public static void OnTick(WorldSession session)
     {
         if (Player is null || !ReferenceEquals(Access.Session(Player), session)) return;
-        if (s_worlds.IsNew(session)) NewWorld();
+        if (s_worlds.IsNew(session.World)) NewWorld();
         if (TestHook.Live) TestHook.Tick(session, session.CurrentSnapshot.Characters.FirstOrDefault(c => c.Selected && c.IsPlayer));   // headless tests only
-        if (Player is { } p0)   // menus while the interface is hidden (UiPeek), WASD Control on or off
-            UiPeek.Tick(p0, Access.ContextMenuOpen(p0) || Look.WindowOpen(p0) || ConversationPad.Open(session));
+        if (Player is { } p0)   // menus while the interface is hidden (UiPeek), WASD Control on or off; never fight Photo Mode
+            UiPeek.Tick(p0, Access.ContextMenuOpen(p0) || Look.WindowOpen(p0) || ConversationPad.Open(session), Access.PhotoModeActive(session));
         if (!On)
         {
             TumbleSystem.SetSteered(null);
+            WasdApi.Clear();   // holds end, nothing steered is reported
             return;
         }
         Verifier.Tick(Player);   // the dials' checks after a pick (0.10)
@@ -833,6 +858,8 @@ public static class Driver
         // in a cage still got move orders and tumble asks, refused not_free): no steering, jump or fall until the game lets them out
         if (lead is not null && InSomething(session, lead.Id)) lead = Skip("skip.in_something");
         TumbleSystem.SetSteered(lead?.Id);   // only this character may ever tumble (TumbleSystem)
+        // WasdApi v2: who is steered and the push, for other mods; a combat mod's hold keeps our move / stop orders out of its fight
+        bool apiHeld = WasdApi.Tick(lead?.Id, s_intent, lead is null ? Vector2.Zero : WorldDirection(session));
         if (lead is null)
         {
             StopIfMoving(session, "no character");
@@ -841,24 +868,25 @@ public static class Driver
         }
 
         Report(lead);
+        if (s_followPressed) { s_followPressed = false; FollowMe(session); }
         MeasureSpeed(session, lead);
         if (s_jumpPressed || TestHook.TakeJump())
         {
             s_jumpPressed = false;
-            switch (JumpRules.Press(session.World.Tick, JumpSystem.ReadyAt(lead.Id), session.World.TickSeconds))
+            switch (JumpRules.Press(session.World.Tick, JumpSystem.ReadyAt(session.World, lead.Id), session.World.TickSeconds))
             {
                 case PressResult.Now: RequestJump(session, lead); break;
                 case PressResult.Buffer: s_jumpBuffered = true; Counters.Add("jump.buffered"); break;
                 default: Counters.Add("jump.press_dropped"); break;
             }
         }
-        else if (s_jumpBuffered && session.World.Tick >= JumpSystem.ReadyAt(lead.Id))
+        else if (s_jumpBuffered && session.World.Tick >= JumpSystem.ReadyAt(session.World, lead.Id))
         {
             s_jumpBuffered = false;
             Counters.Add("jump.buffer_fired");
             RequestJump(session, lead);
         }
-        if (JumpSystem.PlayingClip(lead.Id, session.World.Tick) is { } playing && !JumpRules.Stride(playing))   // a stride jump: the walk or run goes on
+        if (JumpSystem.PlayingClip(session.World, lead.Id, session.World.Tick) is { } playing && !JumpRules.Stride(playing))   // a stride jump: the walk or run goes on
         {
             Counters.Add("jump.hold_steer");   // the clip moves the character; no move order fights it
             ForgetStuck();
@@ -878,6 +906,14 @@ public static class Driver
         StickSpeed.Tick(session, lead, push);   // walk / jog / run by the stick's push
 
         if (TestHook.Hold is not null) s_intent = new Vector2(0, 1);   // the headless test's held W (TestHook)
+        if (apiHeld)
+        {
+            // another mod holds the steering (WasdApi.HoldSteering): no move and no stop (a stop ends a fight); the walk under way is theirs
+            s_moving = null;
+            ForgetStuck();
+            Counters.Add("api.steering_skipped");
+            return;
+        }
         if (s_intent == Vector2.Zero)
         {
             StopIfMoving(session, "released");
@@ -890,19 +926,34 @@ public static class Driver
 
     static readonly WorldSwitch s_worlds = new();
 
+    /// <summary>The push on the ground plane, as Steer turns it (the camera's yaw, a look back not counted); length 0 to 1.</summary>
+    static Vector2 WorldDirection(WorldSession session)
+    {
+        if (s_intent == Vector2.Zero) return Vector2.Zero;
+        float yaw = session.Camera.Strategy.Yaw - s_lookBack;
+        var forward = new Vector2(-MathF.Sin(yaw), -MathF.Cos(yaw));
+        var right = new Vector2(MathF.Cos(yaw), -MathF.Sin(yaw));
+        var d = forward * s_intent.Y + right * s_intent.X;
+        return d.Length() > 1 ? Vector2.Normalize(d) : d;
+    }
+
     /// <summary>The first control tick of a new world (a new game, a load, back from the title): every per-world value goes, so no character id,
     /// tick or hold of the old world reaches this one (an old id can name another character here; an old tick throttled orders or waits).</summary>
     static void NewWorld()
     {
         s_intent = default; s_orderTick = long.MinValue; s_moving = null; s_controlled = null; s_stickPush = 0; s_padSteering = false;
-        s_takePressed = false; s_followLeader = null; s_lookBack = 0;
+        s_takePressed = false; s_followPressed = false; s_followLeader = null; s_lookBack = 0;
         s_reattachedSeen = 0; s_tumbleAskedUntil = long.MinValue; s_waitSince = -1; s_waitLogged = 0;
         s_jumpPressed = false; s_lipSince = -1; s_jumpBuffered = false;
         s_speed = 0; s_speedId = default; s_speedAt = default; s_speedTick = -1;
         s_lastWalkable = null; s_lastWalkableOf = default; s_aheadTries = 0;
         s_neckSent = null; s_neckTick = 0;
+        FrontendNow = false;
+        ManualCombatLink.Reset();
         ForgetStuck();
+        UiPeek.Reset();
         TumbleSystem.SetSteered(null);
+        WasdApi.Clear();
         DialTime.End();          // a dial's slow time: SlowMo's hold given back
         DpadSlow.Forget();       // the D-pad's slow motion: the same, the old world's clock untouched
         if (Views.Current != View.Normal) Views.Reset();   // the old camera's lens is not this world's

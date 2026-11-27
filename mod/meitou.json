@@ -1,7 +1,7 @@
 {
   // PZA's WASD & Controller Support for Meitou (author PZA, GPLv3 or later). Schema: MeitouClient docs/modding.md "Discovery", docs/modding-dependencies.md "Manifest".
   "id": "pza.wasdcontrol",
-  "version": "0.11.0",
+  "version": "0.11.2",
   "apiVersion": 2,
   "assemblies": ["PZAWASDControl.dll"],
   "entry": "PZA.WASDControl.Meitou.WasdControlMod",
