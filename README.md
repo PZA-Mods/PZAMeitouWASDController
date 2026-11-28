@@ -132,6 +132,9 @@ What happened, how to make it happen again, keyboard or which controller, your M
 Meitou folder) copied right after that session. Our lines start with `pza.wasdcontrol`. Post it in its thread on the Meitou Discord or in the
 Workshop page's Bug reports discussion.
 
+## For modders
+Other mods can read WASD's state and hold its steering through `WasdApi` (found by type name, no reference to our DLL): see [docs/api.md](docs/api.md).
+
 ## Licence and source
 GNU GPL version 3 or later; the source is attached to the release (`-source.zip`). Made by **PZA**. Inspired by Direct Control for Kenshi
 (smokefoolius); no code shared. Thanks to **BeatTheCount**, whose Gamepad mod for Meitou gave us the ideas of a safe extra button named on
